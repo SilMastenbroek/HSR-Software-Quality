@@ -31,7 +31,7 @@ def setup_database():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             first_name TEXT,
             last_name TEXT,
-            birthday TEXT,
+            birthday DATE,
             gender TEXT,
             street TEXT,
             house_number TEXT,
@@ -40,7 +40,7 @@ def setup_database():
             email TEXT,
             phone TEXT,
             driving_license TEXT,
-            registration_date TEXT
+            registration_date DATETIME DEFAULT CURRENT_TIMESTAMP,
         )""")
 
         # Scooters
@@ -51,12 +51,12 @@ def setup_database():
             serial_number TEXT UNIQUE,
             top_speed INTEGER,
             battery_capacity INTEGER,
-            soc INTEGER,
-            target_range_soc TEXT,
+            state_of_charge INTEGER,
+            target_range_state_of_charge TEXT,
             location TEXT,
-            out_of_service INTEGER,
+            out_of_service BOOLEAN DEFAULT 0,
             mileage INTEGER,
-            last_maintenance TEXT,
+            last_maintenance DATE,
             in_service_date TEXT
         )""")
 

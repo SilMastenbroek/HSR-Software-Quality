@@ -1,4 +1,4 @@
-from src.database import setup_database
+from src.Models.database import setup_database
 
 def main():
     setup_database()
