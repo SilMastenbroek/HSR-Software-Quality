@@ -5,6 +5,7 @@ from pathlib import Path
 DB_FILE = Path("data/urban_mobility.db")
 DB_FILE.parent.mkdir(exist_ok=True)
 
+# TODO DB gebruiker aanmaken en ermee inloggen. Als extra kan je ook verschillende users toevoegen en dat de juiste rechten geven
 def create_connection():
     """Connect to the database."""
     return sqlite3.connect(DB_FILE)
