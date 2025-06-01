@@ -1,0 +1,12 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\data",
+    "\\src",
+    "\\src\\Controllers",
+    "\\src\\Models",
+    "\\src\\Views"
+  ],
+  "SelectedNode": "\\src\\Views\\user_interface.py",
+  "PreviewInSolutionExplorer": false
+}
