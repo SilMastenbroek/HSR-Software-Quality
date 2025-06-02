@@ -40,7 +40,7 @@ def setup_database():
             email TEXT,
             phone TEXT,
             driving_license TEXT,
-            registration_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+            registration_date DATETIME DEFAULT CURRENT_TIMESTAMP
         )""")
 
         # Scooters
