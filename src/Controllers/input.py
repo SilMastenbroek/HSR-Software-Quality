@@ -16,7 +16,7 @@ from datetime import datetime
 # Add the src directory to the path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from Utils.logger import Logger
+from Controllers.logger import log_event
 
 
 class InputValidator:
@@ -28,14 +28,14 @@ class InputValidator:
     """
     
     def __init__(self):
-        # TODO: use Custom logger.
         """Initialize the input validator with patterns and security rules."""
-        # self.logger = Logger()
+        log_event("input", "InputValidator initialized", "Patterns and security rules loaded", False)
         
         # Regex patterns for various validations
         self._email_pattern = re.compile(
             r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
         )
+        self._phone_pattern = re.compile(r'^\+?[1-9]\d{1,14}$')
         self._alphanumeric_pattern = re.compile(r'^[a-zA-Z0-9]+$')
         self._alpha_pattern = re.compile(r'^[a-zA-Z]+$')
         self._numeric_pattern = re.compile(r'^\d+$')
@@ -53,7 +53,12 @@ class InputValidator:
         # Security blacklists
         self._sql_injection_patterns = [
             'select', 'insert', 'update', 'delete', 'drop', 'create', 'alter',
-            'union', 'or', 'and', '--', ';', '/*', '*/',
+            'union', 'or', 'and', '--', ';', '/*', '*/', 'xp_', 'sp_'
+        ]
+        
+        self._xss_patterns = [
+            '<script', '</script>', 'javascript:', 'onload=', 'onerror=',
+            'onclick=', 'onmouseover=', 'alert(', 'document.cookie'
         ]
                
         self._forbidden_usernames = [
@@ -66,108 +71,136 @@ class InputValidator:
             'Amsterdam', 'Rotterdam', 'Utrecht', 'Eindhoven', 'Tilburg',
             'Groningen', 'Almere', 'Breda', 'Nijmegen', 'Haarlem'
         ]
-    
+
     # Private security check functions
     
     def _check_length(self, input_str: str, min_length: int, max_length: int) -> bool:
         """Check if input length is within specified bounds."""
+        log_event("input", "Length check started", f"Min: {min_length}, Max: {max_length}", False)
+        
         if not isinstance(input_str, str):
-            self.logger.log_security_event(
-                "Length check failed: input is not a string",
-                {"input_type": type(input_str).__name__}
-            )
+            log_event("input", "Length validation failed", f"Input type: {type(input_str).__name__}", True)
             return False
         
         length = len(input_str)
         is_valid = min_length <= length <= max_length
         
         if not is_valid:
-            self.logger.log_security_event(
-                f"Length check failed: {length} not in range [{min_length}, {max_length}]",
-                {"actual_length": length, "min": min_length, "max": max_length}
-            )
+            log_event("input", "Length validation failed", f"Length {length} not in range [{min_length}, {max_length}]", True)
+        else:
+            log_event("input", "Length validation passed", f"Length {length} within range", False)
         
         return is_valid
     
     def _check_first_letter_uppercase(self, input_str: str) -> bool:
         """Check if the first letter is uppercase."""
+        log_event("input", "First letter uppercase check started", "", False)
+        
         if not input_str or not isinstance(input_str, str):
+            log_event("input", "First letter uppercase check failed", "Empty or non-string input", True)
             return False
         
         first_char = input_str[0]
         is_valid = first_char.isupper() and first_char.isalpha()
         
         if not is_valid:
-            self.logger.log_security_event(
-                "First letter uppercase check failed",
-                {"first_char": first_char}
-            )
+            log_event("input", "First letter uppercase check failed", f"First char: {first_char}", True)
+        else:
+            log_event("input", "First letter uppercase check passed", "", False)
         
         return is_valid
     
     def _check_contains_uppercase(self, input_str: str) -> bool:
         """Check if input contains at least one uppercase letter."""
+        log_event("input", "Uppercase check started", "", False)
+        
         if not isinstance(input_str, str):
+            log_event("input", "Uppercase check failed", "Non-string input", True)
             return False
         
         has_upper = any(c.isupper() for c in input_str)
         
         if not has_upper:
-            self.logger.log_security_event("No uppercase letter found in input")
+            log_event("input", "Uppercase check failed", "No uppercase letters found", True)
+        else:
+            log_event("input", "Uppercase check passed", "", False)
         
         return has_upper
     
     def _check_contains_lowercase(self, input_str: str) -> bool:
         """Check if input contains at least one lowercase letter."""
+        log_event("input", "Lowercase check started", "", False)
+        
         if not isinstance(input_str, str):
+            log_event("input", "Lowercase check failed", "Non-string input", True)
             return False
         
         has_lower = any(c.islower() for c in input_str)
         
         if not has_lower:
-            self.logger.log_security_event("No lowercase letter found in input")
+            log_event("input", "Lowercase check failed", "No lowercase letters found", True)
+        else:
+            log_event("input", "Lowercase check passed", "", False)
         
         return has_lower
     
     def _check_contains_digit(self, input_str: str) -> bool:
         """Check if input contains at least one digit."""
+        log_event("input", "Digit check started", "", False)
+        
         if not isinstance(input_str, str):
+            log_event("input", "Digit check failed", "Non-string input", True)
             return False
         
         has_digit = any(c.isdigit() for c in input_str)
         
         if not has_digit:
-            self.logger.log_security_event("No digit found in input")
+            log_event("input", "Digit check failed", "No digits found", True)
+        else:
+            log_event("input", "Digit check passed", "", False)
         
         return has_digit
     
     def _check_contains_special_character(self, input_str: str) -> bool:
         """Check if input contains at least one special character."""
+        log_event("input", "Special character check started", "", False)
+        
         if not isinstance(input_str, str):
+            log_event("input", "Special character check failed", "Non-string input", True)
             return False
         
         has_special = bool(self._special_chars_pattern.search(input_str))
         
         if not has_special:
-            self.logger.log_security_event("No special character found in input")
+            log_event("input", "Special character check failed", "No special characters found", True)
+        else:
+            log_event("input", "Special character check passed", "", False)
         
         return has_special
     
     def _check_no_null_bytes(self, input_str: str) -> bool:
         """Check if input contains null bytes."""
+        log_event("input", "Null byte check started", "", False)
+        
         if not isinstance(input_str, str):
+            log_event("input", "Null byte check failed", "Non-string input", True)
             return False
         
         has_null = '\x00' in input_str
         
         if has_null:
-            self.logger.log_security_event("Null byte detected in input")
+            log_event("input", "Null byte check failed", "Null bytes detected", True)
+            return False
         
-        return not has_null
+        log_event("input", "Null byte check passed", "", False)
+        return True
     
     def _check_no_control_characters(self, input_str: str) -> bool:
         """Check if input contains control characters (except allowed ones)."""
+        log_event("input", "Control character check started", "", False)
+        
         if not isinstance(input_str, str):
+            log_event("input", "Control character check failed", "Non-string input", True)
             return False
         
         allowed_control = {'\t', '\n', '\r'}
@@ -176,153 +209,310 @@ class InputValidator:
         )
         
         if has_invalid_control:
-            self.logger.log_security_event("Invalid control character detected in input")
+            log_event("input", "Control character check failed", "Invalid control characters found", True)
+            return False
         
-        return not has_invalid_control
+        log_event("input", "Control character check passed", "", False)
+        return True
     
     def _check_email_format(self, email: str) -> bool:
         """Check if email matches valid email format."""
+        log_event("input", "Email format check started", f"Length: {len(email) if email else 0}", False)
+        
         if not isinstance(email, str):
+            log_event("input", "Email format check failed", "Non-string input", True)
             return False
         
         is_valid = bool(self._email_pattern.match(email))
         
         if not is_valid:
-            self.logger.log_security_event(
-                "Invalid email format",
-                {"email_length": len(email)}
-            )
+            log_event("input", "Email format check failed", "Invalid email pattern", True)
+        else:
+            log_event("input", "Email format check passed", "", False)
         
         return is_valid
     
     def _check_no_sql_injection_patterns(self, input_str: str) -> bool:
         """Check if input contains SQL injection patterns."""
+        log_event("input", "SQL injection check started", f"Length: {len(input_str) if input_str else 0}", False)
+        
         if not isinstance(input_str, str):
+            log_event("input", "SQL injection check failed", "Non-string input", True)
             return False
         
         input_lower = input_str.lower()
         
         for pattern in self._sql_injection_patterns:
             if pattern in input_lower:
-                self.logger.log_security_event(
-                    f"SQL injection pattern detected: {pattern}",
-                    {"input_length": len(input_str)}
-                )
+                log_event("input", "SQL injection check failed", f"Pattern detected: {pattern}", True)
                 return False
         
+        log_event("input", "SQL injection check passed", "", False)
         return True
     
     def _check_no_xss_patterns(self, input_str: str) -> bool:
         """Check if input contains XSS attack patterns."""
+        log_event("input", "XSS pattern check started", f"Length: {len(input_str) if input_str else 0}", False)
+        
         if not isinstance(input_str, str):
+            log_event("input", "XSS pattern check failed", "Non-string input", True)
             return False
         
         input_lower = input_str.lower()
         
         for pattern in self._xss_patterns:
             if pattern in input_lower:
-                self.logger.log_security_event(
-                    f"XSS pattern detected: {pattern}",
-                    {"input_length": len(input_str)}
-                )
+                log_event("input", "XSS pattern check failed", f"Pattern detected: {pattern}", True)
                 return False
         
+        log_event("input", "XSS pattern check passed", "", False)
         return True
     
     def _check_alphanumeric_only(self, input_str: str) -> bool:
         """Check if input contains only alphanumeric characters."""
+        log_event("input", "Alphanumeric check started", "", False)
+        
         if not isinstance(input_str, str):
+            log_event("input", "Alphanumeric check failed", "Non-string input", True)
             return False
         
         is_valid = bool(self._alphanumeric_pattern.match(input_str))
         
         if not is_valid:
-            self.logger.log_security_event("Non-alphanumeric characters detected")
+            log_event("input", "Alphanumeric check failed", "Non-alphanumeric characters found", True)
+        else:
+            log_event("input", "Alphanumeric check passed", "", False)
         
         return is_valid
     
     def _check_alpha_only(self, input_str: str) -> bool:
         """Check if input contains only alphabetic characters."""
+        log_event("input", "Alpha only check started", "", False)
+        
         if not isinstance(input_str, str):
+            log_event("input", "Alpha only check failed", "Non-string input", True)
             return False
         
         is_valid = bool(self._alpha_pattern.match(input_str))
         
         if not is_valid:
-            self.logger.log_security_event("Non-alphabetic characters detected")
+            log_event("input", "Alpha only check failed", "Non-alphabetic characters found", True)
+        else:
+            log_event("input", "Alpha only check passed", "", False)
         
         return is_valid
     
     def _check_numeric_only(self, input_str: str) -> bool:
         """Check if input contains only numeric characters."""
+        log_event("input", "Numeric only check started", "", False)
+        
         if not isinstance(input_str, str):
+            log_event("input", "Numeric only check failed", "Non-string input", True)
             return False
         
         is_valid = bool(self._numeric_pattern.match(input_str))
         
         if not is_valid:
-            self.logger.log_security_event("Non-numeric characters detected")
+            log_event("input", "Numeric only check failed", "Non-numeric characters found", True)
+        else:
+            log_event("input", "Numeric only check passed", "", False)
         
         return is_valid
     
     def _check_no_repeated_characters(self, input_str: str, max_consecutive: int = 2) -> bool:
         """Check if input has too many consecutive repeated characters."""
+        log_event("input", "Repeated character check started", f"Max consecutive: {max_consecutive}", False)
+        
         if not isinstance(input_str, str):
+            log_event("input", "Repeated character check failed", "Non-string input", True)
             return False
         
         pattern = re.compile(f'(.)\\1{{{max_consecutive},}}')
         has_repeated = bool(pattern.search(input_str))
         
         if has_repeated:
-            self.logger.log_security_event(
-                f"Too many consecutive repeated characters (>{max_consecutive})"
-            )
+            log_event("input", "Repeated character check failed", f"Too many consecutive characters", True)
+            return False
         
-        return not has_repeated
+        log_event("input", "Repeated character check passed", "", False)
+        return True
     
     def _check_not_in_blacklist(self, input_str: str, blacklist: List[str]) -> bool:
         """Check if input is not in the provided blacklist."""
+        log_event("input", "Blacklist check started", f"Blacklist size: {len(blacklist)}", False)
+        
         if not isinstance(input_str, str):
+            log_event("input", "Blacklist check failed", "Non-string input", True)
             return False
         
         input_lower = input_str.lower()
         is_blacklisted = input_lower in [item.lower() for item in blacklist]
         
         if is_blacklisted:
-            self.logger.log_security_event(
-                "Input matches blacklisted value",
-                {"input_length": len(input_str)}
-            )
+            log_event("input", "Blacklist check failed", "Input found in blacklist", True)
+            return False
         
-        return not is_blacklisted
+        log_event("input", "Blacklist check passed", "", False)
+        return True
     
     def _check_phone_format(self, phone: str) -> bool:
         """Check if phone number matches valid format."""
+        log_event("input", "Phone format check started", f"Length: {len(phone) if phone else 0}", False)
+        
         if not isinstance(phone, str):
+            log_event("input", "Phone format check failed", "Non-string input", True)
             return False
         
         is_valid = bool(self._phone_pattern.match(phone))
         
         if not is_valid:
-            self.logger.log_security_event(
-                "Invalid phone format",
-                {"phone_length": len(phone)}
-            )
+            log_event("input", "Phone format check failed", "Invalid phone pattern", True)
+        else:
+            log_event("input", "Phone format check passed", "", False)
         
         return is_valid
     
     def _check_no_whitespace_only(self, input_str: str) -> bool:
         """Check if input is not only whitespace."""
+        log_event("input", "Whitespace check started", "", False)
+        
         if not isinstance(input_str, str):
+            log_event("input", "Whitespace check failed", "Non-string input", True)
             return False
         
         is_whitespace_only = input_str.isspace() or input_str == ""
         
         if is_whitespace_only:
-            self.logger.log_security_event("Input contains only whitespace")
+            log_event("input", "Whitespace check failed", "Input is only whitespace", True)
+            return False
         
-        return not is_whitespace_only
+        log_event("input", "Whitespace check passed", "", False)
+        return True
     
+    def _check_zip_code_format(self, zip_code: str) -> bool:
+        """Check if zip code matches DDDDXX format."""
+        log_event("input", "Zip code format check started", f"Length: {len(zip_code) if zip_code else 0}", False)
+        
+        if not isinstance(zip_code, str):
+            log_event("input", "Zip code format check failed", "Non-string input", True)
+            return False
+        
+        is_valid = bool(self._zip_code_pattern.match(zip_code))
+        
+        if not is_valid:
+            log_event("input", "Zip code format check failed", "Invalid DDDDXX pattern", True)
+        else:
+            log_event("input", "Zip code format check passed", "", False)
+        
+        return is_valid
+    
+    def _check_city_in_predefined_list(self, city: str) -> bool:
+        """Check if city is in the predefined list."""
+        log_event("input", "City predefined list check started", f"City: {city[:10] if city else 'None'}", False)
+        
+        if not isinstance(city, str):
+            log_event("input", "City predefined list check failed", "Non-string input", True)
+            return False
+        
+        is_valid = city in self._predefined_cities
+        
+        if not is_valid:
+            log_event("input", "City predefined list check failed", "City not in predefined list", True)
+        else:
+            log_event("input", "City predefined list check passed", "", False)
+        
+        return is_valid
+    
+    def _check_mobile_phone_format(self, phone: str) -> bool:
+        """Check if mobile phone matches 8 digit format."""
+        log_event("input", "Mobile phone format check started", f"Length: {len(phone) if phone else 0}", False)
+        
+        if not isinstance(phone, str):
+            log_event("input", "Mobile phone format check failed", "Non-string input", True)
+            return False
+        
+        is_valid = bool(self._mobile_phone_pattern.match(phone))
+        
+        if not is_valid:
+            log_event("input", "Mobile phone format check failed", "Invalid 8-digit pattern", True)
+        else:
+            log_event("input", "Mobile phone format check passed", "", False)
+        
+        return is_valid
+    
+    def _check_driving_license_format(self, license_num: str) -> bool:
+        """Check if driving license matches XXDDDDDDD or XDDDDDDDD format."""
+        log_event("input", "Driving license format check started", f"Length: {len(license_num) if license_num else 0}", False)
+        
+        if not isinstance(license_num, str):
+            log_event("input", "Driving license format check failed", "Non-string input", True)
+            return False
+        
+        is_valid_9 = bool(self._license_pattern_9.match(license_num))
+        is_valid_10 = bool(self._license_pattern_10.match(license_num))
+        is_valid = is_valid_9 or is_valid_10
+        
+        if not is_valid:
+            log_event("input", "Driving license format check failed", "Invalid license pattern", True)
+        else:
+            log_event("input", "Driving license format check passed", f"Format: {'9-char' if is_valid_9 else '10-char'}", False)
+        
+        return is_valid
+    
+    def _check_serial_number_format(self, serial: str) -> bool:
+        """Check if serial number is 10-17 alphanumeric characters."""
+        log_event("input", "Serial number format check started", f"Length: {len(serial) if serial else 0}", False)
+        
+        if not isinstance(serial, str):
+            log_event("input", "Serial number format check failed", "Non-string input", True)
+            return False
+        
+        is_valid = bool(self._serial_number_pattern.match(serial))
+        
+        if not is_valid:
+            log_event("input", "Serial number format check failed", "Invalid serial pattern", True)
+        else:
+            log_event("input", "Serial number format check passed", "", False)
+        
+        return is_valid
+    
+    def _check_location_format(self, location: str) -> bool:
+        """Check if location has 5 decimal places format."""
+        log_event("input", "Location format check started", f"Length: {len(location) if location else 0}", False)
+        
+        if not isinstance(location, str):
+            log_event("input", "Location format check failed", "Non-string input", True)
+            return False
+        
+        is_valid = bool(self._location_pattern.match(location))
+        
+        if not is_valid:
+            log_event("input", "Location format check failed", "Invalid location pattern", True)
+        else:
+            log_event("input", "Location format check passed", "", False)
+        
+        return is_valid
+    
+    def _check_iso_date_format(self, date_str: str) -> bool:
+        """Check if date matches ISO 8601 format YYYY-MM-DD."""
+        log_event("input", "ISO date format check started", f"Length: {len(date_str) if date_str else 0}", False)
+        
+        if not isinstance(date_str, str):
+            log_event("input", "ISO date format check failed", "Non-string input", True)
+            return False
+        
+        if not self._iso_date_pattern.match(date_str):
+            log_event("input", "ISO date format check failed", "Invalid date pattern", True)
+            return False
+        
+        try:
+            datetime.strptime(date_str, '%Y-%m-%d')
+            log_event("input", "ISO date format check passed", "", False)
+            return True
+        except ValueError:
+            log_event("input", "ISO date format check failed", "Invalid date value", True)
+            return False
+
     # Public validation functions
     
     def validate_username(self, username: str) -> Dict[str, Any]:
@@ -335,9 +525,8 @@ class InputValidator:
         Returns:
             dict: Validation result with success status and errors
         """
+        log_event("input", "Username validation started", f"Length: {len(username) if username else 0}", False)
         errors = []
-        
-        self.logger.log_validation_attempt("username", len(username) if username else 0)
         
         # Apply security checks
         if not self._check_length(username, 3, 30):
@@ -361,9 +550,9 @@ class InputValidator:
         success = len(errors) == 0
         
         if success:
-            self.logger.log_validation_success("username")
+            log_event("input", "Username validation completed", "Validation successful", False)
         else:
-            self.logger.log_validation_failure("username", errors)
+            log_event("input", "Username validation completed", f"Validation failed with {len(errors)} errors", True)
         
         return {
             'success': success,
@@ -381,9 +570,8 @@ class InputValidator:
         Returns:
             dict: Validation result with success status and errors
         """
+        log_event("input", "Email validation started", f"Length: {len(email) if email else 0}", False)
         errors = []
-        
-        self.logger.log_validation_attempt("email", len(email) if email else 0)
         
         # Apply security checks
         if not self._check_length(email, 5, 254):
@@ -410,9 +598,9 @@ class InputValidator:
         success = len(errors) == 0
         
         if success:
-            self.logger.log_validation_success("email")
+            log_event("input", "Email validation completed", "Validation successful", False)
         else:
-            self.logger.log_validation_failure("email", errors)
+            log_event("input", "Email validation completed", f"Validation failed with {len(errors)} errors", True)
         
         return {
             'success': success,
@@ -430,9 +618,8 @@ class InputValidator:
         Returns:
             dict: Validation result with success status and errors
         """
+        log_event("input", "Password validation started", f"Length: {len(password) if password else 0}", False)
         errors = []
-        
-        self.logger.log_validation_attempt("password", len(password) if password else 0)
         
         # Apply security checks
         if not self._check_length(password, 8, 128):
@@ -462,14 +649,14 @@ class InputValidator:
         success = len(errors) == 0
         
         if success:
-            self.logger.log_validation_success("password")
+            log_event("input", "Password validation completed", "Validation successful", False)
         else:
-            self.logger.log_validation_failure("password", errors)
+            log_event("input", "Password validation completed", f"Validation failed with {len(errors)} errors", True)
         
         return {
             'success': success,
             'errors': errors,
-            'sanitized_input': None  #Dont return pass
+            'sanitized_input': None  # Never return sanitized password
         }
     
     def validate_phone_number(self, phone: str) -> Dict[str, Any]:
@@ -482,9 +669,8 @@ class InputValidator:
         Returns:
             dict: Validation result with success status and errors
         """
+        log_event("input", "Phone number validation started", f"Length: {len(phone) if phone else 0}", False)
         errors = []
-        
-        self.logger.log_validation_attempt("phone", len(phone) if phone else 0)
         
         # Apply security checks
         if not self._check_length(phone, 7, 15):
@@ -505,9 +691,9 @@ class InputValidator:
         success = len(errors) == 0
         
         if success:
-            self.logger.log_validation_success("phone")
+            log_event("input", "Phone number validation completed", "Validation successful", False)
         else:
-            self.logger.log_validation_failure("phone", errors)
+            log_event("input", "Phone number validation completed", f"Validation failed with {len(errors)} errors", True)
         
         return {
             'success': success,
@@ -525,9 +711,8 @@ class InputValidator:
         Returns:
             dict: Validation result with success status and errors
         """
+        log_event("input", "Name validation started", f"Length: {len(name) if name else 0}", False)
         errors = []
-        
-        self.logger.log_validation_attempt("name", len(name) if name else 0)
         
         # Apply security checks
         if not self._check_length(name, 1, 50):
@@ -551,9 +736,9 @@ class InputValidator:
         success = len(errors) == 0
         
         if success:
-            self.logger.log_validation_success("name")
+            log_event("input", "Name validation completed", "Validation successful", False)
         else:
-            self.logger.log_validation_failure("name", errors)
+            log_event("input", "Name validation completed", f"Validation failed with {len(errors)} errors", True)
         
         return {
             'success': success,
@@ -572,9 +757,8 @@ class InputValidator:
         Returns:
             dict: Validation result with success status and errors
         """
+        log_event("input", "General text validation started", f"Length: {len(text) if text else 0}, Max: {max_length}", False)
         errors = []
-        
-        self.logger.log_validation_attempt("general_text", len(text) if text else 0)
         
         # Apply security checks
         if not self._check_length(text, 1, max_length):
@@ -595,9 +779,9 @@ class InputValidator:
         success = len(errors) == 0
         
         if success:
-            self.logger.log_validation_success("general_text")
+            log_event("input", "General text validation completed", "Validation successful", False)
         else:
-            self.logger.log_validation_failure("general_text", errors)
+            log_event("input", "General text validation completed", f"Validation failed with {len(errors)} errors", True)
         
         return {
             'success': success,
@@ -615,9 +799,8 @@ class InputValidator:
         Returns:
             dict: Validation result with success status and errors
         """
+        log_event("input", "Zip code validation started", f"Length: {len(zip_code) if zip_code else 0}", False)
         errors = []
-        
-        self.logger.log_validation_attempt("zip_code", len(zip_code) if zip_code else 0)
         
         # Apply security checks
         if not self._check_length(zip_code, 6, 6):
@@ -638,9 +821,9 @@ class InputValidator:
         success = len(errors) == 0
         
         if success:
-            self.logger.log_validation_success("zip_code")
+            log_event("input", "Zip code validation completed", "Validation successful", False)
         else:
-            self.logger.log_validation_failure("zip_code", errors)
+            log_event("input", "Zip code validation completed", f"Validation failed with {len(errors)} errors", True)
         
         return {
             'success': success,
@@ -658,9 +841,8 @@ class InputValidator:
         Returns:
             dict: Validation result with success status and errors
         """
+        log_event("input", "City validation started", f"City: {city[:10] if city else 'None'}", False)
         errors = []
-        
-        self.logger.log_validation_attempt("city", len(city) if city else 0)
         
         # Apply security checks
         if not self._check_length(city, 1, 50):
@@ -681,9 +863,9 @@ class InputValidator:
         success = len(errors) == 0
         
         if success:
-            self.logger.log_validation_success("city")
+            log_event("input", "City validation completed", "Validation successful", False)
         else:
-            self.logger.log_validation_failure("city", errors)
+            log_event("input", "City validation completed", f"Validation failed with {len(errors)} errors", True)
         
         return {
             'success': success,
@@ -702,9 +884,8 @@ class InputValidator:
         Returns:
             dict: Validation result with success status and errors
         """
+        log_event("input", "Mobile phone validation started", f"Length: {len(phone) if phone else 0}", False)
         errors = []
-        
-        self.logger.log_validation_attempt("mobile_phone", len(phone) if phone else 0)
         
         # Apply security checks
         if not self._check_length(phone, 8, 8):
@@ -728,9 +909,9 @@ class InputValidator:
         success = len(errors) == 0
         
         if success:
-            self.logger.log_validation_success("mobile_phone")
+            log_event("input", "Mobile phone validation completed", "Validation successful", False)
         else:
-            self.logger.log_validation_failure("mobile_phone", errors)
+            log_event("input", "Mobile phone validation completed", f"Validation failed with {len(errors)} errors", True)
         
         return {
             'success': success,
@@ -749,9 +930,8 @@ class InputValidator:
         Returns:
             dict: Validation result with success status and errors
         """
+        log_event("input", "Driving license validation started", f"Length: {len(license_num) if license_num else 0}", False)
         errors = []
-        
-        self.logger.log_validation_attempt("driving_license", len(license_num) if license_num else 0)
         
         # Apply security checks
         if not self._check_length(license_num, 9, 10):
@@ -772,9 +952,9 @@ class InputValidator:
         success = len(errors) == 0
         
         if success:
-            self.logger.log_validation_success("driving_license")
+            log_event("input", "Driving license validation completed", "Validation successful", False)
         else:
-            self.logger.log_validation_failure("driving_license", errors)
+            log_event("input", "Driving license validation completed", f"Validation failed with {len(errors)} errors", True)
         
         return {
             'success': success,
@@ -792,9 +972,8 @@ class InputValidator:
         Returns:
             dict: Validation result with success status and errors
         """
+        log_event("input", "Serial number validation started", f"Length: {len(serial) if serial else 0}", False)
         errors = []
-        
-        self.logger.log_validation_attempt("serial_number", len(serial) if serial else 0)
         
         # Apply security checks
         if not self._check_length(serial, 10, 17):
@@ -818,9 +997,9 @@ class InputValidator:
         success = len(errors) == 0
         
         if success:
-            self.logger.log_validation_success("serial_number")
+            log_event("input", "Serial number validation completed", "Validation successful", False)
         else:
-            self.logger.log_validation_failure("serial_number", errors)
+            log_event("input", "Serial number validation completed", f"Validation failed with {len(errors)} errors", True)
         
         return {
             'success': success,
@@ -838,9 +1017,8 @@ class InputValidator:
         Returns:
             dict: Validation result with success status and errors
         """
+        log_event("input", "Location coordinate validation started", f"Length: {len(coordinate) if coordinate else 0}", False)
         errors = []
-        
-        self.logger.log_validation_attempt("location_coordinate", len(coordinate) if coordinate else 0)
         
         # Apply security checks
         if not self._check_length(coordinate, 7, 9):  # X.XXXXX to XXX.XXXXX
@@ -865,15 +1043,17 @@ class InputValidator:
                 # Basic latitude/longitude range check
                 if not (-180.0 <= coord_value <= 180.0):
                     errors.append("Location coordinate must be between -180 and 180")
+                    log_event("input", "Location coordinate range check failed", f"Value: {coord_value}", True)
             except ValueError:
                 errors.append("Location coordinate must be a valid number")
+                log_event("input", "Location coordinate conversion failed", "Invalid number format", True)
         
         success = len(errors) == 0
         
         if success:
-            self.logger.log_validation_success("location_coordinate")
+            log_event("input", "Location coordinate validation completed", "Validation successful", False)
         else:
-            self.logger.log_validation_failure("location_coordinate", errors)
+            log_event("input", "Location coordinate validation completed", f"Validation failed with {len(errors)} errors", True)
         
         return {
             'success': success,
@@ -891,9 +1071,8 @@ class InputValidator:
         Returns:
             dict: Validation result with success status and errors
         """
+        log_event("input", "Maintenance date validation started", f"Date: {date_str if date_str else 'None'}", False)
         errors = []
-        
-        self.logger.log_validation_attempt("maintenance_date", len(date_str) if date_str else 0)
         
         # Apply security checks
         if not self._check_length(date_str, 10, 10):
@@ -920,20 +1099,23 @@ class InputValidator:
                 # Check if date is not in the future
                 if parsed_date > current_date:
                     errors.append("Maintenance date cannot be in the future")
+                    log_event("input", "Maintenance date future check failed", f"Date: {date_str}", True)
                 
                 # Check if date is not too old (e.g., before 1900)
                 if parsed_date.year < 1900:
                     errors.append("Maintenance date cannot be before year 1900")
+                    log_event("input", "Maintenance date age check failed", f"Year: {parsed_date.year}", True)
                     
             except ValueError:
                 errors.append("Invalid date value")
+                log_event("input", "Maintenance date parsing failed", f"Date: {date_str}", True)
         
         success = len(errors) == 0
         
         if success:
-            self.logger.log_validation_success("maintenance_date")
+            log_event("input", "Maintenance date validation completed", "Validation successful", False)
         else:
-            self.logger.log_validation_failure("maintenance_date", errors)
+            log_event("input", "Maintenance date validation completed", f"Validation failed with {len(errors)} errors", True)
         
         return {
             'success': success,
@@ -949,5 +1131,5 @@ class InputValidator:
         Returns:
             List[str]: List of predefined city names
         """
-        self.logger.log_info("Predefined cities list requested")
+        log_event("input", "Predefined cities requested", f"Count: {len(self._predefined_cities)}", False)
         return self._predefined_cities.copy()
