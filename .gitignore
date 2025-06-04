@@ -177,3 +177,6 @@ cython_debug/
 # logfile
 log.txt
 log.key
+
+# Encryption key
+encryption.key

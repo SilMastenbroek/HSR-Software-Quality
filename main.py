@@ -1,6 +1,7 @@
 from src.Models.database import setup_database
 from src.Controllers.auth import login
 from src.Controllers.logger import get_unread_suspicious_logs
+from src.Controllers.encryption import initialize_encryption
 
 def post_login_notice(role):
     if role in ["super_admin", "system_admin"]:
@@ -12,6 +13,7 @@ def post_login_notice(role):
 
 def main():
     setup_database()
+    initialize_encryption()
 
     print("\nWelkom bij Urban Mobility")
     print("Login om verder te gaan.")
