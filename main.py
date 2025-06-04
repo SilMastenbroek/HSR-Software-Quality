@@ -1,11 +1,31 @@
-import sys
-import os
+from src.Models.database import setup_database
+from src.Controllers.auth import login
+from src.Controllers.logger import get_unread_suspicious_logs
+from src.Controllers.encryption import initialize_encryption
 
-# Voeg de src-map toe aan het pad zodat Python Views, Controllers, Models kan vinden
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'src')))
+def post_login_notice(role):
+    if role in ["super_admin", "system_admin"]:
+        alerts = get_unread_suspicious_logs()
+        if alerts:
+            print("Let op: login activiteit gefaald:")
+            for log in alerts:
+                print(" -", " | ".join(log))
 
-# Startpunt van de applicatie
-from Views.user_interface import main_menu
+def main():
+    setup_database()
+    initialize_encryption()
+
+    print("\nWelkom bij Urban Mobility")
+    print("Login om verder te gaan.")
+    username = input("Gebruikersnaam: ")
+    password = input("Wachtwoord: ")
+
+    success, role = login(username, password)
+    if success:
+        print(f"Inloggen geslaagd als '{role}'.")
+        post_login_notice(role)
+    else:
+        print("Inloggen mislukt.")
 
 if __name__ == "__main__":
-    main_menu()
+    main()
