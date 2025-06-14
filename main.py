@@ -1,6 +1,7 @@
 from src.Models.database import setup_database
 from src.Controllers.auth import login
 from src.Controllers.logger import get_unread_suspicious_logs
+from src.Views.menu_utils import *
 
 def post_login_notice(role):
     if role in ["super_admin", "system_admin"]:
@@ -13,17 +14,29 @@ def post_login_notice(role):
 def main():
     setup_database()
 
-    print("\nWelkom bij Urban Mobility")
-    print("Login om verder te gaan.")
-    username = input("Gebruikersnaam: ")
-    password = input("Wachtwoord: ")
+    # Example Login:
 
-    success, role = login(username, password)
+    success, username, password = login()
+
+    return
     if success:
-        print(f"Inloggen geslaagd als '{role}'.")
-        post_login_notice(role)
+        # Proceed with authentication
+        authenticate_user(username, password)
     else:
-        print("Inloggen mislukt.")
+        # Handle login failure
+        handle_failed_login()
+
+    # print("\nWelkom bij Urban Mobility")
+    # print("Login om verder te gaan.")
+    # username = input("Gebruikersnaam: ")
+    # password = input("Wachtwoord: ")
+
+    # success, role = login(username, password)
+    # if success:
+    #     print(f"Inloggen geslaagd als '{role}'.")
+    #     post_login_notice(role)
+    # else:
+    #     print("Inloggen mislukt.")
 
 if __name__ == "__main__":
     main()
