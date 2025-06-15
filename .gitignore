@@ -174,3 +174,12 @@ cython_debug/
 .pypir
 
 .vs
+.pypirc
+
+
+# logfile
+log.txt
+log.key
+
+# Encryption key
+encryption.key
