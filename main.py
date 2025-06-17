@@ -21,9 +21,13 @@ def main():
 
     # Example Login:
 
-    success, username, password = login()
+    success, username, password = askLogin()
 
-    return
+    clear_screen()
+    print(success, username, password)
+    exit()
+
+
     if success:
         # Proceed with authentication
         authenticate_user(username, password)
