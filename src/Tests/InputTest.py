@@ -11,7 +11,7 @@ import os
 # Add the src directory to the path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from Controllers.input import InputValidator
+from Controllers.input_validation import InputValidator
 
 
 class InputValidationTestMenu:
