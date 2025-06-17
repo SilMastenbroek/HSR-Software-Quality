@@ -171,9 +171,15 @@ cython_debug/
 .ruff_cache/
 
 # PyPI configuration file
+.pypir
+
+.vs
 .pypirc
 
 
 # logfile
 log.txt
 log.key
+
+# Encryption key
+encryption.key
