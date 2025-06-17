@@ -677,4 +677,8 @@ def ask_location_coordinate(coord_type="Coordinate", header=None, max_attempts=3
                 print("\nHELPFUL TIPS:")
                 print("• Use exactly 5 decimal places")
                 print("• Value must be between -180 and 180")
-                print("• Use decimal point (.) not comma (,)
+                print("• Use decimal point (.) not comma (,)")
+        except Exception as e:
+            log_event("menu", f"Unexpected error during {coord_type.lower()} input", f"Error: {str(e)}", True)
+            print(f"\n\nUnexpected error occurred: {str(e)}")
+            return None
