@@ -1,6 +1,8 @@
 from src.Models.database import setup_database
 from src.Controllers.auth import login
 from src.Controllers.logger import get_unread_suspicious_logs
+from src.Controllers.auth import authenticate_user
+from src.Tests.testAuthorization import show_main_menu
 
 from src.Views.menu_utils import *
 
@@ -23,17 +25,22 @@ def main():
 
     success, username, password = askLogin()
 
-    clear_screen()
-    print(success, username, password)
-    exit()
-
-
     if success:
         # Proceed with authentication
-        authenticate_user(username, password)
-    else:
-        # Handle login failure
-        handle_failed_login()
+        user = authenticate_user(username, password)
+
+        if user is None:
+            clear_screen()
+            print("Login mislukt, probeer het opnieuw.")
+            exit(0)
+
+        clear_screen()
+        print("Login geslaagd!")
+        print(user)
+
+        #VOORBEELD GEBRUIK VAN AUTHORIZATION
+        show_main_menu()
+
 
     # print("\nWelkom bij Urban Mobility")
     # print("Login om verder te gaan.")
