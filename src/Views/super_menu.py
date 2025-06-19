@@ -11,7 +11,7 @@ from src.Controllers.logger import log_event
 from src.Controllers.user import UserController
 from src.Controllers.input_validation import InputValidator
 from src.Views.menu_utils import *
-from src.Views.menu_selections import ask_yes_no, display_menu_and_execute
+from src.Views.menu_selections import display_menu_and_execute
 import secrets
 import string
 from datetime import datetime, timedelta
