@@ -10,30 +10,18 @@ from src.Controllers.authorization import UserRole, has_required_role
 from src.Controllers.logger import log_event
 from src.Views.menu_selections import display_menu_and_execute
 
-# Import view functions (presentation layer)
-from src.Views.admin_view_functions import (
+# Import admin-specific view functions that use Controllers
+from src.Views.admin_views import (
     admin_update_own_password,
     view_all_users_and_roles,
     add_new_service_engineer,
     admin_view_and_search_all_scooters,
+    add_scooter_to_system,
+    view_and_search_travellers,
+    add_traveller_to_system,
     create_system_backup,
     view_system_logs
 )
-
-# TODO: Import additional view functions as they are created
-# update_service_engineer_account,
-# delete_service_engineer_account,
-# create_one_time_login_link,
-# admin_update_all_scooter_fields,
-# admin_search_and_view_scooters,
-# add_scooter_to_system,
-# admin_update_and_delete_scooters,
-# update_own_admin_account,
-# delete_own_admin_account,
-# restore_system_backup,
-# add_traveller_to_system,
-# view_and_search_travellers,
-# update_or_remove_traveller
 
 
 # =============================================================================
@@ -53,17 +41,11 @@ def admin_scooter_submenu():
             'function': admin_view_and_search_all_scooters,
             'required_role': UserRole.SystemAdmin
         },
-        # TODO: Add remaining scooter functions when view functions are created
-        # '2': {
-        #     'title': 'Update ALL Scooter Fields',
-        #     'function': admin_update_all_scooter_fields,
-        #     'required_role': UserRole.SystemAdmin
-        # },
-        # '3': {
-        #     'title': 'Add Scooter to System',
-        #     'function': add_scooter_to_system,
-        #     'required_role': UserRole.SystemAdmin
-        # },
+        '2': {
+            'title': 'Add Scooter to System',
+            'function': add_scooter_to_system,
+            'required_role': UserRole.SystemAdmin
+        },
         '0': {
             'title': 'Return to Admin Menu',
             'function': lambda: "return",
@@ -80,6 +62,47 @@ def admin_scooter_submenu():
     )
     
     log_event("admin", "Scooter submenu completed", f"Result: {result}", False)
+    return result
+
+
+# =============================================================================
+# TRAVELLER MANAGEMENT SUBMENU
+# =============================================================================
+
+def admin_traveller_submenu():
+    """
+    Admin traveller management submenu.
+    Groups all traveller-related functions together.
+    """
+    log_event("admin", "Traveller submenu accessed", "Admin traveller management menu", False)
+    
+    traveller_menu = {
+        '1': {
+            'title': 'Add Traveller to System',
+            'function': add_traveller_to_system,
+            'required_role': UserRole.SystemAdmin
+        },
+        '2': {
+            'title': 'View and Search Travellers',
+            'function': view_and_search_travellers,
+            'required_role': UserRole.SystemAdmin
+        },
+        '0': {
+            'title': 'Return to Admin Menu',
+            'function': lambda: "return",
+            'required_role': None
+        }
+    }
+    
+    result = display_menu_and_execute(
+        menu_items=traveller_menu,
+        header="ADMIN - TRAVELLER MANAGEMENT",
+        max_attempts=3,
+        required_role=UserRole.SystemAdmin,
+        loop_menu=True
+    )
+    
+    log_event("admin", "Traveller submenu completed", f"Result: {result}", False)
     return result
 
 
@@ -105,7 +128,6 @@ def admin_user_submenu():
             'function': add_new_service_engineer,
             'required_role': UserRole.SystemAdmin
         },
-        # TODO: Add remaining user functions when view functions are created
         '0': {
             'title': 'Return to Admin Menu',
             'function': lambda: "return",
@@ -147,7 +169,6 @@ def admin_backup_submenu():
             'function': view_system_logs,
             'required_role': UserRole.SystemAdmin
         },
-        # TODO: Add restore function when view function is created
         '0': {
             'title': 'Return to Admin Menu',
             'function': lambda: "return",
@@ -183,25 +204,24 @@ def get_admin_menu_main_config():
             'function': admin_update_own_password,
             'required_role': UserRole.SystemAdmin
         },
-        # TODO: Add remaining personal account functions when view functions are created
         
         # Organized Submenus
-        '4': {
+        '2': {
             'title': 'Scooter Management',
             'function': admin_scooter_submenu,
             'required_role': UserRole.SystemAdmin
         },
-        '5': {
+        '3': {
             'title': 'Traveller Management',
             'function': admin_traveller_submenu,
             'required_role': UserRole.SystemAdmin
         },
-        '6': {
+        '4': {
             'title': 'User Management',
             'function': admin_user_submenu,
             'required_role': UserRole.SystemAdmin
         },
-        '7': {
+        '5': {
             'title': 'System Backup & Logs',
             'function': admin_backup_submenu,
             'required_role': UserRole.SystemAdmin
