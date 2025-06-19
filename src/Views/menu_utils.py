@@ -8,7 +8,7 @@ validator = InputValidator()
 
 def clear_screen():
     """Clear the terminal screen for better user experience."""
-    os.system('cls' if os.name == 'nt' else 'clear')
+    # os.system('cls' if os.name == 'nt' else 'clear')
 
 def print_header(header_text):
     """Display a formatted header with consistent styling."""
@@ -1398,3 +1398,5 @@ def ask_first_name(header="First Name Input", max_attempts=3):
 def ask_last_name(header="Last Name Input", max_attempts=3):
     """Prompt user for last name."""
     return ask_name("Last Name", header, max_attempts)
+
+

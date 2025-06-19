@@ -17,6 +17,9 @@ def set_logged_user_role(role: str):
     LoggedUserRole = role_map.get(role.lower(), None)
 
 def has_required_role(required_role: UserRole) -> bool:
+    global LoggedUserRole
+    print("thingy: ")
+    print(LoggedUserRole)
     if LoggedUserRole is None:
         return False
     return LoggedUserRole >= required_role
