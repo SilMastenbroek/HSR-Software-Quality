@@ -1,4 +1,3 @@
-from Controllers.user_permission import has_permission, get_username
 from Controllers.logger import log_event
 
 def create_backup():

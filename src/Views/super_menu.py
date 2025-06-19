@@ -7,11 +7,11 @@ Includes all admin functions plus super admin exclusive functionality.
 """
 
 from src.Controllers.authorization import UserRole, has_required_role
-from src.Controllers.logger import log_event
+from src.Controllers.logger import log_event, read_logs
 from src.Controllers.user import UserController
 from src.Controllers.input_validation import InputValidator
 from src.Views.menu_utils import *
-from src.Views.menu_selections import display_menu_and_execute
+from src.Views.menu_selections import ask_yes_no, display_menu_and_execute
 import secrets
 import string
 from datetime import datetime, timedelta
@@ -94,7 +94,7 @@ def get_admin_functions_for_super_admin():
             },
             'admin_view_logs': {
                 'title': '[ADMIN] View System Logs',
-                'function': view_system_logs,
+                'function': read_logs,
                 'required_role': UserRole.SuperAdmin
             }
         }
