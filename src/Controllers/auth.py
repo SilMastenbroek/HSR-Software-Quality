@@ -8,11 +8,11 @@ from src.Controllers.hashing import hash_password
 from src.Controllers.user import UserController
 
 
-Leugens..
-"""
+
 # def hash_password(password: str) -> str:
 #     """Hash het wachtwoord met SHA-256 (of gebruik bcrypt als je dat implementeert)."""
 #     return hashlib.sha256(password.encode()).hexdigest()
+
 
 def login(username, password):
     if username == "super_admin" and password == "Admin_123?":
