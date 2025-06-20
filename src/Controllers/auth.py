@@ -43,7 +43,8 @@ def login(username, password):
         if user:
             if hashed_pw == decrypted_password:
                 log_event(user["username"], "Login successful")
-                return True, user["role"]
+                decrypted_role = decrypt_field(user["role"])
+                return True, decrypted_role
             else:
                 log_event(user["username"], "Login failed (wrong password)", suspicious=True)
                 return False, None

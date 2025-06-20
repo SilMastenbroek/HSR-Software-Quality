@@ -114,7 +114,7 @@ def update_own_password():
             return "success"
         else:
             log_event("engineer", "Password update failed - incorrect current password or DB error", f"User: {username}", True)
-            print("\n❌ Password change failed. Please make sure your current password is correct.")
+            print("\nPassword change failed. Please make sure your current password is correct.")
             input("Press Enter to continue...")
             return "failed"
 

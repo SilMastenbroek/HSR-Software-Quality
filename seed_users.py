@@ -9,8 +9,27 @@ def user_exists(cursor, username):
                    (username.lower(),))
     return cursor.fetchone() is not None
 
+def reset_database():
+    conn = create_connection()
+    cursor = conn.cursor()
+    cursor.execute("DROP TABLE IF EXISTS users")
+    cursor.execute("""
+        CREATE TABLE users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL,
+            role TEXT NOT NULL,
+            first_name TEXT NOT NULL,
+            last_name TEXT NOT NULL,
+            registration_date TEXT NOT NULL
+        )
+    """)
+    conn.commit()
+    conn.close()
+
 def seed_users():
     initialize_encryption()
+    reset_database()
     conn = create_connection()
     cursor = conn.cursor()
 

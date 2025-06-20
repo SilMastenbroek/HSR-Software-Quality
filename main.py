@@ -10,7 +10,7 @@ from src.Controllers.encryption import initialize_encryption
 
 
 def post_login_notice(role):
-    if role in ["super_admin", "system_admin"]:
+    if role in ["super_admin", "system_admin", "service_engineer"]:
         alerts = get_unread_suspicious_logs()
         if alerts:
             print("Let op: login activiteit gefaald:")
@@ -49,7 +49,7 @@ def main():
         
         clear_screen()
         print("Login geslaagd!")
-        print(user)
+        #print(user)
         print(f"Role set to: {user_role}")
 
         # Show post-login notices
