@@ -61,3 +61,10 @@ def setup_database():
         )""")
 
         conn.commit()
+
+# Voeg ondersteuning toe om kolomnamen te gebruiken in resultaten
+def get_db_connection():
+    """Returns a database connection with row access by column name."""
+    conn = create_connection()
+    conn.row_factory = sqlite3.Row
+    return conn

@@ -16,6 +16,7 @@ import secrets
 import string
 from datetime import datetime, timedelta
 import os
+from src.Views.engineer_menu import get_engineer_functions_only
 
 
 # Initialize controllers
@@ -53,51 +54,57 @@ def get_admin_functions_for_super_admin():
         # Return admin functions that Super Admin can inherit
         admin_functions = {
             'admin_password_update': {
-                'title': '[ADMIN] Update Admin Password',
+                'title': '[SUPER_ADMIN] Update Admin Password',
                 'function': admin_update_own_password,
                 'required_role': UserRole.SuperAdmin
             },
             'admin_view_users': {
-                'title': '[ADMIN] View All Users and Roles',
+                'title': '[SUPER_ADMIN] View All Users and Roles',
                 'function': view_all_users_and_roles,
                 'required_role': UserRole.SuperAdmin
             },
             'admin_add_service_engineer': {
-                'title': '[ADMIN] Add New Service Engineer',
+                'title': '[SUPER_ADMIN] Add New Service Engineer',
                 'function': add_new_service_engineer,
                 'required_role': UserRole.SuperAdmin
             },
             'admin_view_scooters': {
-                'title': '[ADMIN] View and Search All Scooters',
+                'title': '[SUPER_ADMIN] View and Search All Scooters',
                 'function': admin_view_and_search_all_scooters,
                 'required_role': UserRole.SuperAdmin
             },
             'admin_add_scooter': {
-                'title': '[ADMIN] Add Scooter to System',
+                'title': '[SUPER_ADMIN] Add Scooter to System',
                 'function': add_scooter_to_system,
                 'required_role': UserRole.SuperAdmin
             },
             'admin_view_travellers': {
-                'title': '[ADMIN] View and Search Travellers',
+                'title': '[SUPER_ADMIN] View and Search Travellers',
                 'function': view_and_search_travellers,
                 'required_role': UserRole.SuperAdmin
             },
             'admin_add_traveller': {
-                'title': '[ADMIN] Add Traveller to System',
+                'title': '[SUPER_ADMIN] Add Traveller to System',
                 'function': add_traveller_to_system,
                 'required_role': UserRole.SuperAdmin
             },
             'admin_system_backup': {
-                'title': '[ADMIN] Create System Backup',
+                'title': '[SUPER_ADMIN] Create System Backup',
                 'function': create_system_backup,
                 'required_role': UserRole.SuperAdmin
             },
             'admin_view_logs': {
-                'title': '[ADMIN] View System Logs',
+                'title': '[SUPER_ADMIN] View System Logs',
                 'function': read_logs,
                 'required_role': UserRole.SuperAdmin
             }
         }
+
+        # Engineer functies toevoegen indien toegestaan
+        engineer_functions = get_engineer_functions_only()
+        for key, item in engineer_functions.items():
+            if UserRole.SuperAdmin >= item['required_role']:
+                admin_functions[f'engineer_{key}'] = item
         
         log_event("super_admin", "Admin functions loaded successfully", f"Loaded {len(admin_functions)} functions", False)
         return admin_functions

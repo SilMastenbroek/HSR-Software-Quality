@@ -5,6 +5,7 @@ Uses Fernet symmetric encryption for sensitive data
 
 import os
 import base64
+import hashlib
 from cryptography.fernet import Fernet
 
 _cipher_suite = None # Fernet cipher suite for encryption/decryption
@@ -93,6 +94,14 @@ def decrypt_field(encrypted_value):
         return decrypt_data(encrypted_bytes) # return decrypted string
     except Exception:
         return encrypted_value  # fallback: Return original value if decryption fails
+
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode('utf-8')).hexdigest()
+
+def verify_password(password: str, hashed: str) -> bool:
+    return hash_password(password) == hashed
+
+
 
 # TODO: latr kijken of we dit nodig hebben:
 

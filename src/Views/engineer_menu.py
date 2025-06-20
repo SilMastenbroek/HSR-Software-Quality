@@ -9,6 +9,8 @@ from src.Controllers.authorization import UserRole, has_required_role
 from src.Controllers.logger import log_event
 from src.Views.menu_utils import clear_screen, print_header, ask_password, ask_serial_number, ask_general
 from src.Views.menu_selections import ask_menu_choice, execute_menu_selection, display_menu_and_execute, ask_yes_no
+from src.Controllers.auth import update_user_password, get_logged_in_username
+
 
 
 # =============================================================================
@@ -72,6 +74,29 @@ def update_own_password():
         # 2. Hash new password
         # 3. Update password in database
         # 4. Log successful password change
+
+        # Stap 4: Update wachtwoord in database
+        username = get_logged_in_username()
+        success = update_user_password(username, current_password, new_password)
+
+        if success:
+            log_event("engineer", "Password successfully updated", f"User: {username}", False)
+            clear_screen()
+            print_header("PASSWORD UPDATE SUCCESSFUL")
+            print("Your password has been successfully updated.")
+            print("Please use your new password for future logins.")
+            print("\nSecurity Notice:")
+            print("• Your password change has been logged")
+            print("• If you did not initiate this change, contact system administrator")
+            input("\nPress Enter to continue...")
+            return "success"
+        else:
+            log_event("engineer", "Password update failed - incorrect current password or DB error", f"User: {username}", True)
+            print("\n❌ Password change failed. Please make sure your current password is correct.")
+            input("Press Enter to continue...")
+            return "failed"
+
+
         
         log_event("engineer", "Password update completed successfully", "User password changed", False)
         
@@ -496,17 +521,17 @@ def get_engineer_functions_only():
     engineer_functions = {
         'update_password': {
             'function': update_own_password,
-            'title': 'Update Own Password',
+            'title': '[SERVICE_ENGINEER] Update Own Password',
             'required_role': UserRole.ServiceEngineer
         },
         'update_scooter': {
             'function': update_scooter_attributes,
-            'title': 'Update Scooter Attributes',
+            'title': '[SERVICE_ENGINEER] Update Scooter Attributes',
             'required_role': UserRole.ServiceEngineer
         },
         'search_scooters': {
             'function': search_and_view_scooters,
-            'title': 'Search and View Scooters',
+            'title': '[SERVICE_ENGINEER] Search and View Scooters',
             'required_role': UserRole.ServiceEngineer
         }
     }
