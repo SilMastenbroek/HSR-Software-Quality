@@ -43,7 +43,7 @@ def seed_users():
             print(f"[!] Gebruiker '{user['username']}' bestaat al, wordt overgeslagen.")
             continue
 
-        # zelfde datum voor hash én opslag
+        # zelfde datum voor hash opslag
         reg_date = datetime.now().isoformat()
 
         # hash met deterministische salt
