@@ -34,8 +34,8 @@ def main():
     username = "super_admin"
     password = "Admin_123?"
 
-    # username = "engineer2"
-    # password = "Engineer@789!"
+    username = "engineer2"
+    password = "Engineer@789!"
     success = True
 
     if success:

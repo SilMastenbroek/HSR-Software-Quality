@@ -301,65 +301,6 @@ def add_new_service_engineer():
 # ADMIN VIEW FUNCTIONS - SCOOTER MANAGEMENT
 # =============================================================================
 
-def admin_view_and_search_all_scooters():
-    """
-    View function to display all scooters.
-    Uses ScooterController for data retrieval.
-    """
-    log_event("admin_view", "View all scooters initiated", "Scooter overview", False)
-    
-    try:
-        clear_screen()
-        print_header("ADMIN - VIEW AND SEARCH ALL SCOOTERS")
-        
-        # Use Controller to get scooters
-        scooters = scooter_controller.get_all_scooters()
-        
-        if scooters is None:
-            log_event("admin_view", "View scooters failed - no data", "Controller returned None", True)
-            clear_screen()
-            print_header("ERROR RETRIEVING SCOOTERS")
-            print("Unable to retrieve scooter data.")
-            input("\nPress Enter to continue...")
-            return "error"
-        
-        # Display scooters
-        clear_screen()
-        print_header("ALL SCOOTERS")
-        
-        if not scooters:
-            print("No scooters found in the system.")
-        else:
-            print(f"{'ID':<4} | {'Brand':<12} | {'Model':<12} | {'Serial':<15} | {'Battery':<8} | {'Status'}")
-            print("-" * 75)
-            
-            for scooter in scooters:
-                try:
-                    scooter_id = str(scooter.get('id', 'N/A'))
-                    brand = str(scooter.get('brand', 'N/A'))[:12]
-                    model = str(scooter.get('model', 'N/A'))[:12]
-                    serial = str(scooter.get('serial_number', 'N/A'))[:15]
-                    battery = f"{scooter.get('state_of_charge', 0)}%"
-                    status = "Out" if scooter.get('out_of_service', False) else "Active"
-                    
-                    print(f"{scooter_id:<4} | {brand:<12} | {model:<12} | {serial:<15} | {battery:<8} | {status}")
-                except Exception as e:
-                    log_event("admin_view", "Error displaying scooter", f"Error: {str(e)}", True)
-                    continue
-        
-        print(f"\nTotal scooters: {len(scooters)}")
-        log_event("admin_view", "View scooters completed", f"Displayed {len(scooters)} scooters", False)
-        input("\nPress Enter to continue...")
-        return "success"
-        
-    except Exception as e:
-        log_event("admin_view", "View scooters error", f"Error: {str(e)}", True)
-        clear_screen()
-        print_header("VIEW SCOOTERS ERROR")
-        print(f"Error: {str(e)}")
-        input("\nPress Enter to continue...")
-        return "error"
-
 
 def add_scooter_to_system():
     """

@@ -10,13 +10,13 @@ from src.Controllers.authorization import UserRole, has_required_role
 from src.Controllers.logger import log_event
 from src.Views.dbbackup_view import run_backup_menu
 from src.Views.menu_selections import display_menu_and_execute
+from src.Views.engineer_menu import view_all_scooters, update_scooter_attributes, search_and_view_scooters
 
 # Import admin-specific view functions that use Controllers
 from src.Views.admin_views import (
     admin_update_own_password,
     view_all_users_and_roles,
     add_new_service_engineer,
-    admin_view_and_search_all_scooters,
     add_scooter_to_system,
     view_and_search_travellers,
     add_traveller_to_system,
@@ -39,13 +39,23 @@ def admin_scooter_submenu():
     scooter_menu = {
         '1': {
             'title': 'View and Search All Scooters',
-            'function': admin_view_and_search_all_scooters,
+            'function': view_all_scooters,
             'required_role': UserRole.SystemAdmin
         },
         '2': {
             'title': 'Add Scooter to System',
             'function': add_scooter_to_system,
             'required_role': UserRole.SystemAdmin
+        },
+        '3': {
+            'title': 'Update Scooter Attributes',
+            'function': update_scooter_attributes,
+            'required_role': UserRole.ServiceEngineer
+        },
+        '4': {
+            'title': 'Search and View Scooters',
+            'function': search_and_view_scooters,
+            'required_role': UserRole.ServiceEngineer
         },
         '0': {
             'title': 'Return to Admin Menu',

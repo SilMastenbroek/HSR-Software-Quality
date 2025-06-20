@@ -112,7 +112,6 @@ class ScooterController:
                     "location": decrypt_field(row["location"]),
                     "out_of_service": row["out_of_service"],
                     "mileage": row["mileage"],
-                    "last_maintenance": row["last_maintenance"],
-                    "in_service_date": row["in_service_date"]
+                    "last_maintenance": row["last_maintenance"]
                 })
             return result

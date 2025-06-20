@@ -202,7 +202,7 @@ def execute_menu_selection(menu_items, selected_choice):
         log_event("menu", "Menu function execution failed", 
                  f"Choice: {selected_choice}, Error: {str(e)}", True)
         
-        clear_screen()
+        #clear_screen()
         print_header("EXECUTION ERROR")
         print(f"An error occurred while executing the selected function:")
         print(f"Error: {str(e)}")

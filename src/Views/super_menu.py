@@ -33,7 +33,6 @@ from src.Views.admin_views import (
     admin_update_own_password,
     view_all_users_and_roles,
     add_new_service_engineer,
-    admin_view_and_search_all_scooters,
     add_scooter_to_system,
     view_and_search_travellers,
     add_traveller_to_system,

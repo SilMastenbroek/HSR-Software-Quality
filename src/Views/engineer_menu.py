@@ -514,10 +514,8 @@ def view_all_scooters():
     
     if not ask_yes_no("This will display all scooters in the system. Continue?", "Confirm View All"):
         return "cancelled"
-    
     controller = ScooterController()
     scooters = controller.get_all_scooters()
-
     if not scooters:
         print("\nNo scooters found in the system.")
         input("Press Enter to continue...")
