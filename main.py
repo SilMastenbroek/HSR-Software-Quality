@@ -38,9 +38,6 @@ def main():
         # Proceed with authentication
         user = authenticate_user(username, password)
 
-        print(user)
-        exit()
-
         if user is None:
             clear_screen()
             print("Login mislukt, probeer het opnieuw.")

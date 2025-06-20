@@ -31,7 +31,7 @@ class UserController:
             cursor = conn.cursor()
 
             # Haal alle gebruikers op
-            cursor.execute("SELECT * FROM users where username = ?", (username))
+            cursor.execute("SELECT * FROM users where username = ?", (username,))
             row = cursor.fetchone()
 
             return {
