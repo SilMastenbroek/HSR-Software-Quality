@@ -5,6 +5,12 @@ from src.Models.database import create_connection, get_db_connection
 from src.Controllers.authorization import set_logged_user_role
 from src.Controllers.encryption import decrypt_field, hash_password, verify_password
 
+"""
+Thomas: 
+Zover ik weet. Nee, er was zowieso nog geen HASHING functionaliteit alleen encryption
+
+Leugens..
+"""
 def hash_password(password: str) -> str:
     """Hash het wachtwoord met SHA-256 (of gebruik bcrypt als je dat implementeert)."""
     return hashlib.sha256(password.encode()).hexdigest()
