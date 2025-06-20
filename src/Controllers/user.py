@@ -29,7 +29,8 @@ class UserController:
         with create_connection() as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
+            encrypted_username = encrypt_field(username)
+            cursor.execute("SELECT * FROM users WHERE username = ?", (encrypted_username,))
             row = cursor.fetchone()
             if row:
                 return {
@@ -40,7 +41,7 @@ class UserController:
                     "last_name": decrypt_field(row["last_name"]),
                     "registration_date": row["registration_date"]
                 }
-            return None
+        return None
 
     def update_user(username, **fields):
         allowed_fields = ["username", "password_hash", "role", "first_name", "last_name"]

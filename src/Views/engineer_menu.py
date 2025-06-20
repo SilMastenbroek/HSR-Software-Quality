@@ -81,7 +81,20 @@ def update_own_password():
 
         # Stap 4: Update wachtwoord in database
         # success = update_user_password(username, current_password, new_password)
-        success_password_update = UserController.update_user(username=username, password_hash=)
+        
+        # Haalt data uit db op basis van username
+        user_data = UserController.read_user(username)
+        # Hashed wachtwoord met de userdata
+        hashed_pw = hash_password(
+            password=new_password,
+            username=user_data["username"],
+            first_name=user_data["first_name"],
+            last_name=user_data["last_name"],
+            registration_date=user_data["registration_date"]
+        )
+
+        success_password_update = UserController.update_user(username=username, password_hash=hashed_pw)
+        
 
         if success_password_update:
             log_event("engineer", "Password successfully updated", f"User: {username}", False)
