@@ -26,13 +26,20 @@ def main():
 
     # success, username, password = askLogin()
     # REMOVE THIS
+    # success = True
+    # username = "super_admin"
+    # password = "Admin_123?"
+
+    username = "engineer2"
+    password = "Engineer@789!"
     success = True
-    username = "super_admin"
-    password = "Admin_123?"
 
     if success:
         # Proceed with authentication
         user = authenticate_user(username, password)
+
+        print(user)
+        exit()
 
         if user is None:
             clear_screen()

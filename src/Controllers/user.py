@@ -16,7 +16,7 @@ class UserController:
                 INSERT INTO users (username, password_hash, role, first_name, last_name, registration_date)
                 VALUES (?, ?, ?, ?, ?, ?)
             """, (
-                encrypt_field(username),
+                username,
                 encrypt_field(password_hash),
                 encrypt_field(role),
                 encrypt_field(first_name),
@@ -25,23 +25,25 @@ class UserController:
             ))
             conn.commit()
 
-    def read_user(self, username):
+    def read_user(username):
         with create_connection() as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            encrypted_username = encrypt_field(username)
-            cursor.execute("SELECT * FROM users WHERE username = ?", (encrypted_username,))
+
+            # Haal alle gebruikers op
+            cursor.execute("SELECT * FROM users where username = ?", (username))
             row = cursor.fetchone()
-            if row:
-                return {
-                    "username": decrypt_field(row["username"]),
-                    "password_hash": decrypt_field(row["password_hash"]),
-                    "role": decrypt_field(row["role"]),
-                    "first_name": decrypt_field(row["first_name"]),
-                    "last_name": decrypt_field(row["last_name"]),
-                    "registration_date": row["registration_date"]
-                }
-        return None
+
+            return {
+                "username": row["username"],
+                "password_hash": decrypt_field(row["password_hash"]),  # LET OP: dit is al plaintext hash
+                "role": decrypt_field(row["role"]),
+                "first_name": decrypt_field(row["first_name"]),
+                "last_name": decrypt_field(row["last_name"]),
+                "registration_date": row["registration_date"]
+            }
+            
+        return None  # Geen gebruiker gevonden
 
     def update_user(username, **fields):
         allowed_fields = ["username", "password_hash", "role", "first_name", "last_name"]

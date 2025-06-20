@@ -1,8 +1,8 @@
 import sqlite3
 from datetime import datetime
-from Models.database import create_connection
-from Controllers.encryption import encrypt_field, initialize_encryption
-from Controllers.hashing import hash_password 
+from src.Models.database import create_connection
+from src.Controllers.encryption import encrypt_field, initialize_encryption
+from src.Controllers.hashing import hash_password 
 
 def user_exists(cursor, username):
     cursor.execute("SELECT 1 FROM users WHERE lower(username) = lower(?)",
@@ -60,7 +60,7 @@ def seed_users():
                                first_name, last_name, registration_date)
             VALUES (?, ?, ?, ?, ?, ?)
         """, (
-            encrypt_field(user["username"]),
+            user["username"],
             encrypt_field(pw_hash),
             encrypt_field(user["role"]),
             encrypt_field(user["first_name"]),
