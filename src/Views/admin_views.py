@@ -8,7 +8,7 @@ Follows MVC pattern with proper separation of concerns.
 
 from Views.menu_selections import ask_yes_no
 from src.Controllers.authorization import UserRole, has_required_role
-from src.Controllers.logger import log_event
+from src.Controllers.logger import log_event, read_logs
 from src.Controllers.user import UserController
 from src.Controllers.scooter import ScooterController
 from src.Controllers.traveller import TravellerController
@@ -765,28 +765,29 @@ def view_system_logs():
     Shows recent system activities.
     """
     log_event("admin_view", "View system logs initiated", "Log display", False)
-    
+
     try:
         clear_screen()
         print_header("ADMIN - VIEW SYSTEM LOGS")
-        
-        # TODO: Use Controller to get actual logs
-        # For now, show mock data
-        print("Recent System Activities:")
-        print()
-        print(f"{'Timestamp':<19} | {'User':<12} | {'Action':<20} | {'Details':<30}")
-        print("-" * 85)
-        print("2024-01-15 10:30:25 | engineer1    | login_success        | User logged in successfully")
-        print("2024-01-15 10:31:15 | unknown      | login_failed         | Invalid credentials")
-        print("2024-01-15 10:32:45 | engineer1    | scooter_update       | Updated scooter ABC123456")
-        print("2024-01-15 10:33:10 | admin1       | view_users           | Viewed all system users")
-        print("2024-01-15 10:35:22 | engineer1    | password_change      | Changed account password")
-        
+
+        logs = read_logs()
+
+        if not logs:
+            print("No logs found.")
+        else:
+            print("Recent System Activities:\n")
+            print(f"{'Timestamp':<19} | {'User':<15} | {'Action':<20} | {'Details':<30} | Suspicious")
+            print("-" * 105)
+
+            for log in logs[-100:]:  # Laatste 100 logs max
+                timestamp, username, action, info, suspicious = log
+                print(f"{timestamp:<19} | {username:<15} | {action:<20} | {info:<30} | {suspicious}")
+
         log_event("admin_view", "System logs viewed", "Log display completed", False)
-        
+
         input("\nPress Enter to continue...")
         return "success"
-        
+
     except Exception as e:
         log_event("admin_view", "View logs error", f"Error: {str(e)}", True)
         clear_screen()
@@ -794,6 +795,7 @@ def view_system_logs():
         print(f"Error: {str(e)}")
         input("\nPress Enter to continue...")
         return "error"
+
 
 # =============================================================================
 # HELPER FUNCTIONS
