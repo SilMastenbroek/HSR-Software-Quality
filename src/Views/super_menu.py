@@ -11,7 +11,8 @@ from src.Controllers.logger import log_event
 from src.Controllers.user import UserController
 from src.Controllers.input_validation import InputValidator
 from src.Views.menu_utils import *
-from src.Views.menu_selections import display_menu_and_execute
+from src.Views.menu_selections import display_menu_and_execute, ask_yes_no
+from src.Controllers.hashing import hash_password
 import secrets
 import string
 from datetime import datetime, timedelta
@@ -181,15 +182,24 @@ def add_new_system_admin():
         
         # Generate secure temporary password
         temp_password = generate_secure_password()
+        registration_date=datetime.now().isoformat()
+
+        hashed_pw = hash_password(
+            password=temp_password,
+            username=username,
+            first_name=first_name,
+            last_name=last_name,
+            registration_date=registration_date
+        )
         
         # Use Controller to create system admin
         success = user_controller.create_user(
             username=username,
-            password_hash=temp_password,  # TODO: Hash this properly
+            password_hash=hashed_pw,  # TODO: Hash this properly
             role='system_admin',
             first_name=first_name,
             last_name=last_name,
-            registration_date=datetime.now().isoformat()
+            registration_date=registration_date
         )
         
         if not success:

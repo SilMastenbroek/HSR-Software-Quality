@@ -9,6 +9,7 @@ from src.Controllers.authorization import UserRole, has_required_role
 from src.Controllers.logger import log_event
 from src.Controllers.user import UserController
 from src.Models.database import create_connection
+from src.Controllers.auth import hash_password 
 from datetime import datetime
 import secrets
 import string
@@ -72,12 +73,19 @@ class AdminUserController:
             if temp_password is None:
                 temp_password = self._generate_secure_password()
             
-            # Hash the password
-            from src.Controllers.auth import hash_password
-            password_hash = hash_password(temp_password)
-            
-            # Create the user
+            # Genereer registratie-datum eerst
             registration_date = datetime.now().isoformat()
+
+            # Hash het wachtwoord met alle benodigde data
+            password_hash = hash_password(
+                password=temp_password,
+                username=username,
+                first_name=first_name,
+                last_name=last_name,
+                registration_date=registration_date
+            )
+
+            # Maak de gebruiker aan
             self.user_controller.create_user(
                 username=username,
                 password_hash=password_hash,

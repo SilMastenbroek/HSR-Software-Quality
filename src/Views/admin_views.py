@@ -13,6 +13,7 @@ from src.Controllers.user import UserController
 from src.Controllers.scooter import ScooterController
 from src.Controllers.traveller import TravellerController
 from src.Controllers.input_validation import InputValidator
+from src.Controllers.hashing import hash_password
 from src.Views.menu_utils import *
 from datetime import datetime
 import os
@@ -235,17 +236,27 @@ def add_new_service_engineer():
             input("\nPress Enter to continue...")
             return "failed"
         
-        # Generate secure password
-        temp_password = ''.join(secrets.choice(string.ascii_letters + string.digits + "!@#$%^&*") for _ in range(16))
-        
-        # Use Controller to create user
+        # Genereer wachtwoord en registratiedatum
+        temp_password = generate_secure_password()
+        registration_date = datetime.now().isoformat()
+
+        # Hash wachtwoord 
+        password_hash = hash_password(
+            password=temp_password,
+            username=username,
+            first_name=first_name,
+            last_name=last_name,
+            registration_date=registration_date
+        )
+
+        # Maak account aan
         success = user_controller.create_user(
             username=username,
-            password_hash=temp_password,  # TODO: Hash properly
+            password_hash=password_hash,
             role='service_engineer',
             first_name=first_name,
             last_name=last_name,
-            registration_date=datetime.now().isoformat()
+            registration_date=registration_date
         )
         
         if not success:
@@ -783,6 +794,15 @@ def view_system_logs():
         print(f"Error: {str(e)}")
         input("\nPress Enter to continue...")
         return "error"
+
+# =============================================================================
+# HELPER FUNCTIONS
+# =============================================================================
+
+def generate_secure_password(length=16):
+    """Generate a secure random password."""
+    characters = string.ascii_letters + string.digits + "!@#$%^&*"
+    return ''.join(secrets.choice(characters) for _ in range(length))
 
 
 # =============================================================================
