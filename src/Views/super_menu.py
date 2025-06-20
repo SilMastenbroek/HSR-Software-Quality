@@ -54,57 +54,51 @@ def get_admin_functions_for_super_admin():
         # Return admin functions that Super Admin can inherit
         admin_functions = {
             'admin_password_update': {
-                'title': '[SUPER_ADMIN] Update Admin Password',
+                'title': '[ADMIN] Update Admin Password',
                 'function': admin_update_own_password,
                 'required_role': UserRole.SuperAdmin
             },
             'admin_view_users': {
-                'title': '[SUPER_ADMIN] View All Users and Roles',
+                'title': '[ADMIN] View All Users and Roles',
                 'function': view_all_users_and_roles,
                 'required_role': UserRole.SuperAdmin
             },
             'admin_add_service_engineer': {
-                'title': '[SUPER_ADMIN] Add New Service Engineer',
+                'title': '[ADMIN] Add New Service Engineer',
                 'function': add_new_service_engineer,
                 'required_role': UserRole.SuperAdmin
             },
             'admin_view_scooters': {
-                'title': '[SUPER_ADMIN] View and Search All Scooters',
+                'title': '[ADMIN] View and Search All Scooters',
                 'function': admin_view_and_search_all_scooters,
                 'required_role': UserRole.SuperAdmin
             },
             'admin_add_scooter': {
-                'title': '[SUPER_ADMIN] Add Scooter to System',
+                'title': '[ADMIN] Add Scooter to System',
                 'function': add_scooter_to_system,
                 'required_role': UserRole.SuperAdmin
             },
             'admin_view_travellers': {
-                'title': '[SUPER_ADMIN] View and Search Travellers',
+                'title': '[ADMIN] View and Search Travellers',
                 'function': view_and_search_travellers,
                 'required_role': UserRole.SuperAdmin
             },
             'admin_add_traveller': {
-                'title': '[SUPER_ADMIN] Add Traveller to System',
+                'title': '[ADMIN] Add Traveller to System',
                 'function': add_traveller_to_system,
                 'required_role': UserRole.SuperAdmin
             },
             'admin_system_backup': {
-                'title': '[SUPER_ADMIN] Create System Backup',
+                'title': '[ADMIN] Create System Backup',
                 'function': create_system_backup,
                 'required_role': UserRole.SuperAdmin
             },
             'admin_view_logs': {
-                'title': '[SUPER_ADMIN] View System Logs',
+                'title': '[ADMIN] View System Logs',
                 'function': read_logs,
                 'required_role': UserRole.SuperAdmin
             }
         }
-
-        # Engineer functies toevoegen indien toegestaan
-        engineer_functions = get_engineer_functions_only()
-        for key, item in engineer_functions.items():
-            if UserRole.SuperAdmin >= item['required_role']:
-                admin_functions[f'engineer_{key}'] = item
         
         log_event("super_admin", "Admin functions loaded successfully", f"Loaded {len(admin_functions)} functions", False)
         return admin_functions
@@ -606,6 +600,7 @@ def get_super_admin_menu_config():
     try:
         # Get admin functions for inheritance
         admin_functions = get_admin_functions_for_super_admin()
+        engineer_functions = get_engineer_functions_only()
         
         # Super Admin exclusive functions
         super_admin_exclusive = {
@@ -639,6 +634,12 @@ def get_super_admin_menu_config():
         # Add inherited admin functions starting from menu item 10
         next_number = 10
         for func_key, func_data in admin_functions.items():
+            super_admin_exclusive[str(next_number)] = func_data
+            next_number += 1
+
+        # Add inherited engineer functions starting from menu item 10
+        next_number = 20
+        for func_key, func_data in engineer_functions.items():
             super_admin_exclusive[str(next_number)] = func_data
             next_number += 1
         
@@ -696,6 +697,7 @@ def run_super_admin_menu():
     try:
         # Get complete menu configuration (includes admin functions)
         menu_config = get_super_admin_menu_config()
+    
         
         # Run the menu system
         result = display_menu_and_execute(
