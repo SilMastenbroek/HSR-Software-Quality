@@ -1,14 +1,12 @@
 import sqlite3
-import hashlib
 from datetime import datetime
 from Models.database import create_connection
-from Controllers.encryption import encrypt_field, initialize_encryption, hash_password
-
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
+from Controllers.encryption import encrypt_field, initialize_encryption
+from Controllers.hashing import hash_password 
 
 def user_exists(cursor, username):
-    cursor.execute("SELECT 1 FROM users WHERE lower(username) = lower(?)", (username,))
+    cursor.execute("SELECT 1 FROM users WHERE lower(username) = lower(?)",
+                   (username.lower(),))
     return cursor.fetchone() is not None
 
 def seed_users():
@@ -45,16 +43,29 @@ def seed_users():
             print(f"[!] Gebruiker '{user['username']}' bestaat al, wordt overgeslagen.")
             continue
 
+        # zelfde datum voor hash én opslag
+        reg_date = datetime.now().isoformat()
+
+        # hash met deterministische salt
+        pw_hash = hash_password(
+            password=user["password"],
+            username=user["username"],
+            first_name=user["first_name"],
+            last_name=user["last_name"],
+            registration_date=reg_date
+        )
+
         cursor.execute("""
-            INSERT INTO users (username, password_hash, role, first_name, last_name, registration_date)
+            INSERT INTO users (username, password_hash, role,
+                               first_name, last_name, registration_date)
             VALUES (?, ?, ?, ?, ?, ?)
         """, (
             encrypt_field(user["username"]),
-            hash_password(user["password"]),
-            user["role"],
+            encrypt_field(pw_hash),
+            encrypt_field(user["role"]),
             encrypt_field(user["first_name"]),
             encrypt_field(user["last_name"]),
-            datetime.now().isoformat()
+            reg_date
         ))
 
         print(f"[+] Gebruiker '{user['username']}' succesvol toegevoegd als '{user['role']}'.")
