@@ -1,22 +1,12 @@
 import sqlite3
-import hashlib
 from src.Controllers.logger import log_event
-from src.Models.database import create_connection, get_db_connection
+from src.Models.database import create_connection
 from src.Controllers.authorization import set_logged_user_role
 from src.Controllers.encryption import decrypt_field
+from src.Controllers.hashing import hash_password 
 
-"""
-Thomas: 
-Zover ik weet. Nee, er was zowieso nog geen HASHING functionaliteit alleen encryption
-
-Leugens..
-"""
-def hash_password(password: str) -> str:
-    """Hash het wachtwoord met SHA-256 (of gebruik bcrypt als je dat implementeert)."""
-    return hashlib.sha256(password.encode()).hexdigest()
 
 def login(username, password):
-
     if username == "super_user" and password == "Admin_123?":
         return True, "super_admin"
 
@@ -24,26 +14,38 @@ def login(username, password):
     cursor = conn.cursor()
 
     try:
-        # Haal alle gebruikers op
-        cursor.execute("SELECT username, password_hash, role FROM users")
+        cursor.execute("""
+            SELECT username, password_hash, role, first_name, last_name, registration_date
+            FROM users
+        """)
         users = cursor.fetchall()
 
-        # Doorloop alle gebruikers
-        for encrypted_username, password_hash_db, role in users:
+        for encrypted_username, password_hash_db, role, enc_fname, enc_lname, registration_date in users:
             try:
                 decrypted_username = decrypt_field(encrypted_username)
+                decrypted_role = decrypt_field(role)
+                decrypted_fname = decrypt_field(enc_fname)
+                decrypted_lname = decrypt_field(enc_lname)
+                decrypted_hash = decrypt_field(password_hash_db)
             except Exception:
-                continue  # skip als decryptie faalt (bijvoorbeeld corrupt veld)
+                continue  # overslaan als decryptie faalt
 
             if decrypted_username.lower() == username.lower():
-                if hash_password(password) == password_hash_db:
+                hashed_input = hash_password(
+                    password=password,
+                    username=decrypted_username,
+                    first_name=decrypted_fname,
+                    last_name=decrypted_lname,
+                    registration_date=registration_date
+                )
+
+                if hashed_input == decrypted_hash:
                     log_event(decrypted_username, "Login successful")
-                    return True, role
+                    return True, decrypted_role
                 else:
                     log_event(decrypted_username, "Login failed (wrong password)", suspicious=True)
                     return False, None
 
-        # Geen enkele gebruiker komt overeen
         log_event(username, "Login failed (unknown user)", suspicious=True)
         return False, None
 
@@ -62,20 +64,9 @@ def authenticate_user(username, password):
         print("Authentication failed.")
         return None
 
-    print(role)
     set_logged_user_role(role)
-    set_logged_in_username(username)
 
     return {
         "username": username,
         "role": role
     }
-
-_logged_in_username = None  # Globale variabele om ingelogde gebruiker bij te houden
-
-def set_logged_in_username(username):
-    global _logged_in_username
-    _logged_in_username = username
-
-def get_logged_in_username():
-    return _logged_in_username
