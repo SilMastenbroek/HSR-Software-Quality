@@ -8,8 +8,11 @@ Implements role-based access control and modular design for easy integration wit
 from src.Controllers.authorization import UserRole, has_required_role
 from src.Controllers.logger import log_event
 from src.Views.menu_utils import clear_screen, print_header, ask_password, ask_serial_number, ask_general
-from src.Views.menu_selections import ask_menu_choice, execute_menu_selection, display_menu_and_execute, ask_yes_no
-
+from src.Views.menu_selections import display_menu_and_execute, ask_yes_no
+from src.Controllers.user import UserController
+from src.Controllers.scooter import ScooterController
+from src.Controllers.hashing import hash_password
+from src.Views.menu_utils import askLogin, clear_screen
 
 # =============================================================================
 # ENGINEER FUNCTION PLACEHOLDERS
@@ -37,15 +40,21 @@ def update_own_password():
             return "cancelled"
         
         # Step 1: Verify current password
-        print("\nStep 1: Verify Current Password")
-        current_password = ask_password("CURRENT PASSWORD", max_attempts=3, show_requirements=False)
-        
-        if current_password is None:
+        print("\nStep 1: Verify Current Username and Password")
+        success, username, password = askLogin()
+
+        # REMOVE THIS TIJDELIJKE OM SNELLE TESTS TE DOEN
+        # success = True
+        # username = "super_admin"
+        # password = "Admin_123?"
+        # new_password = "Ab44567As_"
+
+        if success is False:
             log_event("engineer", "Password update failed - current password validation", "", True)
             print("\nPassword update cancelled due to current password validation failure.")
             input("Press Enter to continue...")
             return "failed"
-        
+
         # Step 2: Get new password
         print("\nStep 2: Enter New Password")
         new_password = ask_password("NEW PASSWORD", max_attempts=3, show_requirements=True)
@@ -66,12 +75,51 @@ def update_own_password():
             input("Press Enter to continue...")
             return "failed"
         
+
+        # print("Username to change: " + username, "Old password: " + password, "New password: " + new_password)
+        # exit()
+        
         # TODO: Implement actual password update in database
         # This would typically involve:
         # 1. Verify current password against database
         # 2. Hash new password
         # 3. Update password in database
         # 4. Log successful password change
+
+        # Stap 4: Update wachtwoord in database
+        
+        # Haalt data uit db op basis van username
+        user_data = UserController.read_user(username=username)
+
+        # Hashed wachtwoord met de userdata
+        hashed_pw = hash_password(
+            password=new_password,
+            username=user_data["username"],
+            first_name=user_data["first_name"],
+            last_name=user_data["last_name"],
+            registration_date=user_data["registration_date"]
+        )
+
+        success_password_update = UserController.update_user(username=username, password_hash=hashed_pw)
+        
+        if success_password_update:
+            log_event("engineer", "Password successfully updated", f"User: {username}", False)
+            clear_screen()
+            print_header("PASSWORD UPDATE SUCCESSFUL")
+            print("Your password has been successfully updated.")
+            print("Please use your new password for future logins.")
+            print("\nSecurity Notice:")
+            print("• Your password change has been logged")
+            print("• If you did not initiate this change, contact system administrator")
+            input("\nPress Enter to continue...")
+            return "success"
+        else:
+            log_event("engineer", "Password update failed - incorrect current password or DB error", f"User: {username}", True)
+            print("\nPassword change failed. Please make sure your current password is correct.")
+            input("Press Enter to continue...")
+            return "failed"
+
+
         
         log_event("engineer", "Password update completed successfully", "User password changed", False)
         
@@ -128,20 +176,21 @@ def update_scooter_attributes():
         
         log_event("engineer", "Scooter identified for update", f"Serial: {serial_number}", False)
         
-        # Step 2: Display available update options
-        clear_screen()
-        print_header("SCOOTER UPDATE OPTIONS")
-        print(f"Scooter Serial: {serial_number}")
-        print()
-        print("Available attributes to update:")
-        print("1. Update Location (coordinates)")
-        print("2. Update Maintenance Date")
-        print("3. Update Status (available/maintenance/out-of-service)")
-        print("0. Cancel update")
-        print()
-        
-        update_choice = ask_general("Select attribute to update (1-3, 0 to cancel):", 
-                                  "Attribute Selection", max_attempts=3, max_length=1)
+        update_choice = ask_general(
+"""
+Scooter Serial: {serial}
+
+Available attributes to update:
+1. Update Location (coordinates)
+2. Update Maintenance Date
+3. Update Status (available/maintenance/out-of-service)
+0. Cancel update
+
+Select attribute to update (1-3, 0 to cancel):""".format(serial=serial_number),
+                        "SCOOTER UPDATE OPTIONS",
+                        max_attempts=3,
+                        max_length=1
+                    )
         
         if update_choice == "0" or update_choice is None:
             log_event("engineer", "Scooter update cancelled", f"Serial: {serial_number}", False)
@@ -187,6 +236,15 @@ def process_scooter_attribute_update(serial_number, update_choice):
             if longitude is None:
                 return "failed"
             
+            controller = ScooterController()
+            success = controller.update_scooter(
+                serial_number=serial_number,
+                location=f"{latitude},{longitude}"
+            )
+
+            if not success:
+                print("❌ Database update failed.")
+                return "failed"
             # TODO: Update scooter location in database
             log_event("engineer", "Scooter location updated", 
                      f"Serial: {serial_number}, Lat: {latitude}, Lon: {longitude}", False)
@@ -205,6 +263,12 @@ def process_scooter_attribute_update(serial_number, update_choice):
                 return "failed"
             
             # TODO: Update maintenance date in database
+            controller = ScooterController()
+            success = controller.update_scooter(
+                serial_number=serial_number,
+                last_maintenance=maintenance_date
+            )
+
             log_event("engineer", "Scooter maintenance date updated", 
                      f"Serial: {serial_number}, Date: {maintenance_date}", False)
             
@@ -233,6 +297,11 @@ def process_scooter_attribute_update(serial_number, update_choice):
                 return "failed"
             
             # TODO: Update scooter status in database
+            controller = ScooterController()
+            success = controller.update_scooter(
+                serial_number=serial_number,
+                out_of_service=new_status
+            )
             log_event("engineer", "Scooter status updated", 
                      f"Serial: {serial_number}, Status: {new_status}", False)
             
@@ -324,20 +393,27 @@ def search_scooter_by_serial():
     
     if serial_number is None:
         return "cancelled"
-    
-    # TODO: Implement database search by serial number
-    # This would typically query the database for the scooter
+
+    # Zoek scooter in database
+    controller = ScooterController()
+    scooter = controller.get_scooter_by_serial(serial_number)
+
+    if not scooter:
+        print("\nNo scooter found with this serial number.")
+        log_event("engineer", "Scooter search failed - not found", f"Serial: {serial_number}", True)
+        input("Press Enter to continue...")
+        return "not_found"
     
     log_event("engineer", "Scooter search by serial completed", f"Serial: {serial_number}", False)
     
-    # Mock display of scooter information
+    # Toon informatie over scooter
     clear_screen()
     print_header("SCOOTER INFORMATION")
-    print(f"Serial Number: {serial_number}")
-    print("Status: Available")  # TODO: Get from database
-    print("Location: 52.37403, 4.88969")  # TODO: Get from database
-    print("Last Maintenance: 2024-01-15")  # TODO: Get from database
-    print("Battery Level: 85%")  # TODO: Get from database
+    print(f"Serial Number: {scooter['serial_number']}")
+    print(f"Status: {scooter['status']}")
+    print(f"Location: {scooter['location']}")
+    print(f"Last Maintenance: {scooter['last_maintenance']}")
+    print(f"Battery Level: {scooter['state_of_charge']}%")
     
     input("\nPress Enter to continue...")
     return "success"
@@ -346,73 +422,90 @@ def search_scooter_by_serial():
 def search_scooter_by_location():
     """Search for scooters in a specific location area."""
     log_event("engineer", "Location search initiated", "", False)
-    
+
     from src.Views.menu_utils import ask_city
-    
+    from src.Controllers.scooter import ScooterController
+
     city = ask_city("SEARCH LOCATION")
-    
+
     if city is None:
         return "cancelled"
-    
-    # TODO: Implement database search by location
-    
+
+    controller = ScooterController()
+    scooters = controller.get_all_scooters()
+
+    # Filter scooters waar 'location' de stad bevat (case-insensitive)
+    matched = [
+        s for s in scooters
+        if city.lower() in s["location"].lower()
+    ]
+
     log_event("engineer", "Scooter search by location completed", f"City: {city}", False)
-    
-    # Mock display of search results
+
     clear_screen()
     print_header("SCOOTERS IN LOCATION")
     print(f"Search Location: {city}")
-    print("Found 3 scooters:")
-    print("1. Serial: ABC1234567 - Status: Available")
-    print("2. Serial: DEF2345678 - Status: Maintenance")
-    print("3. Serial: GHI3456789 - Status: Available")
-    
+
+    if not matched:
+        print("No scooters found in that location.")
+    else:
+        print(f"Found {len(matched)} scooter(s):\n")
+        for i, s in enumerate(matched[:10], 1):
+            print(f"{i}. Serial: {s['serial_number']} - Status: {s['target_range_state_of_charge']}")
+        if len(matched) > 10:
+            print(f"... (showing first 10 of {len(matched)})")
+
     input("\nPress Enter to continue...")
     return "success"
 
 
 def search_scooter_by_status():
-    """Search for scooters by their current status."""
+    """Search for scooters by out_of_service status."""
+    from src.Controllers.scooter import ScooterController
+
     log_event("engineer", "Status search initiated", "", False)
-    
-    print("Select status to search for:")
-    print("1. Available")
-    print("2. Maintenance")
-    print("3. Out of Service")
-    
-    status_choice = ask_general("Select status (1-3):", "Status Search", max_attempts=3, max_length=1)
-    
-    if status_choice is None:
-        return "cancelled"
-    
-    status_map = {
-        "1": "available",
-        "2": "maintenance",
-        "3": "out-of-service"
-    }
-    
-    selected_status = status_map.get(status_choice)
-    if selected_status is None:
-        print("Invalid status selection.")
+
+    # Vraag de status op met duidelijke uitleg
+    status_choice = ask_general(
+        """SCOOTER STATUS SEARCH
+
+Select status to search for:
+1. Available
+2. Out of Service
+""",
+        "Status Filter", max_attempts=3, max_length=1
+    )
+
+    if status_choice not in ["1", "2"]:
+        print("Invalid status selected.")
         return "failed"
-    
-    # TODO: Use controller functions
-    
-    log_event("engineer", "Scooter search by status completed", f"Status: {selected_status}", False)
-    
-    # Mock display of search results
+
+    # Koppel keuze aan bool
+    out_of_service_filter = True if status_choice == "2" else False
+
+    # Haal alle scooters op en filter lokaal
+    controller = ScooterController()
+    scooters = controller.get_all_scooters()
+    matching = [s for s in scooters if s["out_of_service"] == out_of_service_filter]
+
+    # Log event
+    log_event("engineer", "Scooter status search completed",
+              f"Filter: {'Out of Service' if out_of_service_filter else 'Available'}", False)
+
+    # Toon resultaat
     clear_screen()
     print_header("SCOOTERS BY STATUS")
-    print(f"Status Filter: {selected_status}")
-    print("Found 5 scooters:")
-    print("1. Serial: ABC1234567")
-    print("2. Serial: DEF2345678")
-    print("3. Serial: GHI3456789")
-    print("4. Serial: JKL4567890")
-    print("5. Serial: MNO5678901")
-    
+    print(f"Filter: {'Out of Service' if out_of_service_filter else 'Available'}\n")
+
+    if not matching:
+        print("No scooters found.")
+    else:
+        for i, s in enumerate(matching[:10], 1):
+            print(f"{i}. Serial: {s['serial_number']}")
+
     input("\nPress Enter to continue...")
     return "success"
+
 
 
 def view_all_scooters():
@@ -422,22 +515,31 @@ def view_all_scooters():
     if not ask_yes_no("This will display all scooters in the system. Continue?", "Confirm View All"):
         return "cancelled"
     
-    # TODO: Use controller functions
-    
+    controller = ScooterController()
+    scooters = controller.get_all_scooters()
+
+    if not scooters:
+        print("\nNo scooters found in the system.")
+        input("Press Enter to continue...")
+        return "not_found"
+
     log_event("engineer", "View all scooters completed", "All scooters displayed", False)
-    
-    # Mock display of all scooters
+
     clear_screen()
     print_header("ALL SCOOTERS")
-    print("Total scooters: 15")
-    print()
-    print("Serial Number    | Status      | Location        | Last Maintenance")
-    print("-" * 70)
-    print("ABC1234567      | Available   | Amsterdam      | 2024-01-15")
-    print("DEF2345678      | Maintenance | Rotterdam      | 2024-01-10")
-    print("GHI3456789      | Available   | Utrecht        | 2024-01-12")
-    print("... (showing first 3 of 15)")
-    
+    print(f"Total scooters: {len(scooters)}\n")
+    print("Serial Number    | Status         | Location          | Last Maintenance")
+    print("-" * 75)
+
+    for scooter in scooters[:10]:  # toon max 10
+        print(f"{scooter['serial_number'][:13]:<17} | "
+              f"{scooter['target_range_state_of_charge']:<14} | "
+              f"{scooter['location'][:17]:<18} | "
+              f"{scooter['last_maintenance']}")
+
+    if len(scooters) > 10:
+        print(f"... (showing first 10 of {len(scooters)})")
+
     input("\nPress Enter to continue...")
     return "success"
 
@@ -496,17 +598,17 @@ def get_engineer_functions_only():
     engineer_functions = {
         'update_password': {
             'function': update_own_password,
-            'title': 'Update Own Password',
+            'title': '[SERVICE_ENGINEER] Update Own Password',
             'required_role': UserRole.ServiceEngineer
         },
         'update_scooter': {
             'function': update_scooter_attributes,
-            'title': 'Update Scooter Attributes',
+            'title': '[SERVICE_ENGINEER] Update Scooter Attributes',
             'required_role': UserRole.ServiceEngineer
         },
         'search_scooters': {
             'function': search_and_view_scooters,
-            'title': 'Search and View Scooters',
+            'title': '[SERVICE_ENGINEER] Search and View Scooters',
             'required_role': UserRole.ServiceEngineer
         }
     }

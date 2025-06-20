@@ -12,10 +12,14 @@ from src.Controllers.user import UserController
 from src.Controllers.input_validation import InputValidator
 from src.Views.menu_utils import *
 from src.Views.menu_selections import ask_yes_no, display_menu_and_execute
+from src.Views.menu_selections import display_menu_and_execute, ask_yes_no
+from src.Controllers.hashing import hash_password
+
 import secrets
 import string
 from datetime import datetime, timedelta
 import os
+from src.Views.engineer_menu import get_engineer_functions_only
 
 
 # Initialize controllers
@@ -181,15 +185,24 @@ def add_new_system_admin():
         
         # Generate secure temporary password
         temp_password = generate_secure_password()
+        registration_date=datetime.now().isoformat()
+
+        hashed_pw = hash_password(
+            password=temp_password,
+            username=username,
+            first_name=first_name,
+            last_name=last_name,
+            registration_date=registration_date
+        )
         
         # Use Controller to create system admin
         success = user_controller.create_user(
             username=username,
-            password_hash=temp_password,  # TODO: Hash this properly
+            password_hash=hashed_pw,  # TODO: Hash this properly
             role='system_admin',
             first_name=first_name,
             last_name=last_name,
-            registration_date=datetime.now().isoformat()
+            registration_date=registration_date
         )
         
         if not success:
@@ -599,6 +612,7 @@ def get_super_admin_menu_config():
     try:
         # Get admin functions for inheritance
         admin_functions = get_admin_functions_for_super_admin()
+        engineer_functions = get_engineer_functions_only()
         
         # Super Admin exclusive functions
         super_admin_exclusive = {
@@ -632,6 +646,12 @@ def get_super_admin_menu_config():
         # Add inherited admin functions starting from menu item 10
         next_number = 10
         for func_key, func_data in admin_functions.items():
+            super_admin_exclusive[str(next_number)] = func_data
+            next_number += 1
+
+        # Add inherited engineer functions starting from menu item 10
+        next_number = 20
+        for func_key, func_data in engineer_functions.items():
             super_admin_exclusive[str(next_number)] = func_data
             next_number += 1
         
@@ -689,6 +709,7 @@ def run_super_admin_menu():
     try:
         # Get complete menu configuration (includes admin functions)
         menu_config = get_super_admin_menu_config()
+    
         
         # Run the menu system
         result = display_menu_and_execute(

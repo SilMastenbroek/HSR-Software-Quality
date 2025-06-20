@@ -12,6 +12,7 @@ from src.Controllers.user import UserController
 from src.Controllers.scooter import ScooterController
 from src.Controllers.traveller import TravellerController
 from src.Controllers.input_validation import InputValidator
+from src.Controllers.hashing import hash_password
 from datetime import datetime
 import secrets
 import string
@@ -180,17 +181,25 @@ def create_service_engineer_logic(username, first_name, last_name, email, passwo
         else:
             generated_password = False
         
-        # Hash password
-        password_hash = f"hashed_{password}"  # TODO: Implement proper hashing
-        
-        # Create user account
+        registration_date = datetime.now().isoformat()
+
+        # Hash het wachtwoord correct
+        password_hash = hash_password(
+            password=password,
+            username=username,
+            first_name=first_name,
+            last_name=last_name,
+            registration_date=registration_date
+        )
+
+        # Maak het account aan
         user_controller.create_user(
             username=username,
             password_hash=password_hash,
             role='service_engineer',
             first_name=first_name,
             last_name=last_name,
-            registration_date=datetime.now().isoformat()
+            registration_date=registration_date
         )
         
         log_event("admin_logic", "Service engineer created", f"Username: {username}", False)

@@ -1,25 +1,5 @@
 import os
 import getpass
-from src.Controllers.input_validation import InputValidator
-from src.Controllers.logger import log_event
-
-# Initialize the input validator instance globally to reuse across functions
-validator = InputValidator()
-
-def clear_screen():
-    """Clear the terminal screen for better user experience."""
-    # os.system('cls' if os.name == 'nt' else 'clear')
-
-def print_header(header_text):
-    """Display a formatted header with consistent styling."""
-    print(f"""
-========================================
-          {header_text}
-========================================
-""")
-
-import os
-import getpass
 from datetime import datetime
 from src.Controllers.input_validation import InputValidator
 from src.Controllers.logger import log_event

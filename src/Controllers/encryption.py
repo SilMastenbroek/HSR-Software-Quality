@@ -5,6 +5,7 @@ Uses Fernet symmetric encryption for sensitive data
 
 import os
 import base64
+import hashlib
 from cryptography.fernet import Fernet
 
 _cipher_suite = None # Fernet cipher suite for encryption/decryption
