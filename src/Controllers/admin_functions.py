@@ -102,24 +102,7 @@ def get_all_users_logic():
     try:
         # TODO: Implement method to get all users from UserController
         # For now, returning mock data
-        users = [
-            {
-                'id': 1,
-                'username': 'engineer1',
-                'role': 'service_engineer',
-                'first_name': 'John',
-                'last_name': 'Doe',
-                'registration_date': '2024-01-15'
-            },
-            {
-                'id': 2,
-                'username': 'admin1',
-                'role': 'system_admin',
-                'first_name': 'Jane',
-                'last_name': 'Smith',
-                'registration_date': '2024-01-10'
-            }
-        ]
+        
         
         log_event("admin_logic", "Get all users successful", f"Retrieved {len(users)} users", False)
         return {

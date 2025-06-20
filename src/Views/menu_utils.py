@@ -19,7 +19,7 @@ def print_header(header_text):
 ========================================
 """)
 
-def ask_general(question, header="General Question", max_attempts=3, max_length=1000):
+def ask_general(question, header="", max_attempts=3, max_length=1000):
     """
     Prompt user for general text input with comprehensive validation and security measures.
     Validates input against SQL injection, length limits, and malicious patterns.
@@ -35,7 +35,8 @@ def ask_general(question, header="General Question", max_attempts=3, max_length=
         attempt_count += 1
         
         clear_screen()
-        print_header(header)
+        if header:
+            print_header(header)
         
         print(f"{question}")
         if attempt_count > 1:

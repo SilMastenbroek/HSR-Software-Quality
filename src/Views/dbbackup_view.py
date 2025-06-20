@@ -17,6 +17,10 @@ from datetime import datetime
 import secrets
 import string
 import os
+from src.Controllers.authorization import get_username
+from src.Controllers.dbbackup import restore_backup
+from src.Models.database import create_connection
+from src.Controllers.encryption import decrypt_field
 
 
 # Initialize controllers
@@ -265,83 +269,88 @@ def list_available_backups():
 def restore_database_backup():
     """
     Restore database from backup.
-    Requires validation for System Admins, immediate access for Super Admins.
+    Requires backup code verification and user authentication.
     """
     log_event("backup_view", "Restore backup initiated", "Database restoration process", False)
-    
-    # Check validation for operation
-    if not request_admin_validation("Restore Database from Backup"):
-        return "access_denied"
     
     try:
         clear_screen()
         print_header("RESTORE DATABASE FROM BACKUP")
         
         print("Database Restoration Process:")
+        print("• Enter the backup code to restore from")
+        print("• Code must exist in database")
+        print("• Only authorized users can restore their backups")
         print("• WARNING: This will replace current database")
         print("• All current data will be lost")
-        print("• System will be temporarily unavailable")
         print("• Operation cannot be undone")
         print()
         
-        # Get available backups first
-        backups = list_backups()
-        if not backups['success'] or not backups.get('backups'):
-            log_event("backup_view", "Restore failed - no backups", "No backup files available", True)
-            clear_screen()
-            print_header("RESTORE FAILED")
-            print("No backup files available for restoration.")
-            print("Create a backup first before attempting restoration.")
-            input("\nPress Enter to continue...")
-            return "failed"
-        
-        backup_files = backups['backups']
-        
-        # Display available backups
-        print("Available backups:")
-        print(f"{'#':<3} | {'Filename':<30} | {'Created':<19}")
-        print("-" * 60)
-        
-        for i, backup in enumerate(backup_files, 1):
-            filename = str(backup.get('filename', 'Unknown'))[:30]
-            created = str(backup.get('created', 'Unknown'))[:19]
-            print(f"{i:<3} | {filename:<30} | {created:<19}")
-        
-        print()
-        
-        # Get backup selection
-        backup_choice = ask_general(
-            f"Select backup to restore (1-{len(backup_files)}, 0 to cancel):",
-            "BACKUP SELECTION",
+        # Get backup code from user
+        backup_code = ask_general(
+            "Enter backup code:",
+            "BACKUP CODE INPUT",
             max_attempts=3,
-            max_length=3
+            max_length=50
         )
         
-        if backup_choice is None or backup_choice == "0":
-            log_event("backup_view", "Restore cancelled", "User cancelled backup selection", False)
+        if backup_code is None:
+            log_event("backup_view", "Restore cancelled", "User cancelled backup code input", False)
             return "cancelled"
         
-        try:
-            backup_index = int(backup_choice) - 1
-            if backup_index < 0 or backup_index >= len(backup_files):
-                raise ValueError("Invalid backup selection")
-        except ValueError:
-            log_event("backup_view", "Restore failed - invalid selection", f"Selection: {backup_choice}", True)
-            clear_screen()
-            print_header("INVALID SELECTION")
-            print("Invalid backup selection. Please try again.")
-            input("\nPress Enter to continue...")
-            return "failed"
+        # Check if backup code exists in database and verify user authorization
         
-        selected_backup = backup_files[backup_index]
+        current_user = get_username()
+        log_event("backup_view", "Restore backup code check", f"Code: {backup_code}, User: {current_user}", False)
+        
+        # Check if backup exists and user is authorized
+        
+        with create_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT backup_code, created_by_username, restore_allowed_username, path 
+                FROM backups 
+                WHERE backup_code = ?
+            """, (backup_code,))
+            
+            backup_record = cursor.fetchone()
+            
+            if not backup_record:
+                log_event("backup_view", "Restore failed - backup not found", f"Code: {backup_code}", True)
+                clear_screen()
+                print_header("BACKUP NOT FOUND")
+                print("The specified backup code was not found in the database.")
+                print("Please verify the backup code and try again.")
+                input("\nPress Enter to continue...")
+                return "failed"
+            
+            # Check if current user is authorized to restore this backup
+            try:
+                restore_allowed_user = decrypt_field(backup_record[2])
+                if current_user != restore_allowed_user:
+                    log_event("backup_view", "Restore failed - unauthorized user", 
+                             f"User: {current_user}, Allowed: {restore_allowed_user}", True)
+                    clear_screen()
+                    print_header("UNAUTHORIZED ACCESS")
+                    print("You are not authorized to restore this backup.")
+                    print("Only the authorized user can restore this backup.")
+                    input("\nPress Enter to continue...")
+                    return "access_denied"
+            except Exception as decrypt_error:
+                log_event("backup_view", "Restore failed - decryption error", 
+                         f"Error: {str(decrypt_error)}", True)
+                clear_screen()
+                print_header("RESTORE FAILED")
+                print("Error verifying backup authorization.")
+                input("\nPress Enter to continue...")
+                return "failed"
         
         # Final confirmation
         clear_screen()
         print_header("FINAL CONFIRMATION")
         print("DANGER: Database Restoration")
         print("=" * 50)
-        print(f"Selected backup: {selected_backup['filename']}")
-        print(f"Created: {selected_backup.get('created', 'Unknown')}")
+        print(f"Backup code: {backup_code}")
         print()
         print("WARNING:")
         print("• This will PERMANENTLY DELETE all current data")
@@ -358,16 +367,16 @@ def restore_database_backup():
         print("DO NOT interrupt this process!")
         
         # Use Controller to restore backup
-        restore_result = restore_backup(selected_backup['filename'])
+        restore_result = restore_backup(backup_code)
         
-        if restore_result['success']:
+        if restore_result:
             log_event("backup_view", "Database restore completed successfully", 
-                     f"Restored from: {selected_backup['filename']}", False)
+                     f"Restored from code: {backup_code}", False)
             
             clear_screen()
             print_header("RESTORE COMPLETED SUCCESSFULLY")
             print("Database restoration completed successfully:")
-            print(f"• Restored from: {selected_backup['filename']}")
+            print(f"• Restored from backup code: {backup_code}")
             print(f"• Restoration time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
             print()
             print("IMPORTANT:")
@@ -378,18 +387,18 @@ def restore_database_backup():
             
         else:
             log_event("backup_view", "Database restore failed", 
-                     f"Error: {restore_result.get('error', 'Unknown error')}", True)
+                     f"Error restoring backup code: {backup_code}", True)
             
             clear_screen()
             print_header("RESTORE FAILED")
             print("Database restoration failed:")
-            print(f"• Error: {restore_result.get('error', 'Unknown error')}")
+            print(f"• Backup code: {backup_code}")
             print("• Database may be in inconsistent state")
             print("• Contact system administrator immediately")
             print("• Check system logs for detailed error information")
         
         input("\nPress Enter to continue...")
-        return "success" if restore_result['success'] else "failed"
+        return "success" if restore_result else "failed"
         
     except Exception as e:
         log_event("backup_view", "Restore backup error", f"Unexpected error: {str(e)}", True)

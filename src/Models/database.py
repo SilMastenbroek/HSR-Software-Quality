@@ -64,9 +64,10 @@ def setup_database():
         c.execute("""CREATE TABLE IF NOT EXISTS backups (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             path TEXT NOT NULL,
-            backup_code TEXT,
+            backup_code TEXT UNIQUE,
             backup_date DATETIME DEFAULT CURRENT_TIMESTAMP,
-            created_by TEXT
+            created_by_username TEXT NOT NULL,
+            restore_allowed_username TEXT NOT NULL
         )""")
 
         conn.commit()

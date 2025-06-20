@@ -3,7 +3,7 @@ from seed_users import seed_users
 from src.Views.admin_menu import run_admin_menu
 from src.Views.engineer_menu import run_engineer_menu
 from src.Views.super_menu import run_super_admin_menu
-from src.Controllers.authorization import UserRole, has_required_role, set_logged_user_role  # Add this import
+from src.Controllers.authorization import UserRole, has_required_role, set_logged_user_role, set_logged_username  # Add this import
 from src.Models.database import setup_database
 from src.Controllers.auth import authenticate_user
 from src.Controllers.logger import get_unread_suspicious_logs
@@ -34,8 +34,11 @@ def main():
     username = "super_admin"
     password = "Admin_123?"
 
-    username = "engineer2"
-    password = "Engineer@789!"
+    # username = "sysadmin1"
+    # password = "SecurePass_456!"
+
+    # username = "engineer2"
+    # password = "Engineer@789!"
     success = True
 
     if success:
@@ -50,6 +53,8 @@ def main():
         # FIX: Set the logged user role after successful authentication
         user_role = user.get('role')  # Assuming user dict has 'role' key
         set_logged_user_role(user_role)  # This is what was missing!
+
+        set_logged_username(user.get('username'))
         
         clear_screen()
         print("Login geslaagd!")
