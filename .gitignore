@@ -183,3 +183,4 @@ log.key
 
 # Encryption key
 encryption.key
+/data/urban_mobility.db

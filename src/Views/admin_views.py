@@ -8,7 +8,7 @@ Follows MVC pattern with proper separation of concerns.
 
 from Views.menu_selections import ask_yes_no
 from src.Controllers.authorization import UserRole, has_required_role
-from src.Controllers.logger import log_event, read_logs
+from src.Controllers.logger import log_event, read_logs, get_unread_suspicious_logs
 from src.Controllers.user import UserController
 from src.Controllers.scooter import ScooterController
 from src.Controllers.traveller import TravellerController
@@ -762,7 +762,7 @@ def create_system_backup():
 def view_system_logs():
     """
     View function for displaying system logs.
-    Shows recent system activities.
+    Allows admin to view all logs or only suspicious ones.
     """
     log_event("admin_view", "View system logs initiated", "Log display", False)
 
@@ -770,16 +770,22 @@ def view_system_logs():
         clear_screen()
         print_header("ADMIN - VIEW SYSTEM LOGS")
 
-        logs = read_logs()
+        show_suspicious_only = ask_yes_no(
+            "Show only suspicious log entries?", "Filter Suspicious Logs"
+        )
 
+        logs = get_unread_suspicious_logs() if show_suspicious_only else read_logs()
+        clear_screen()
+        
         if not logs:
             print("No logs found.")
         else:
+            
             print("Recent System Activities:\n")
             print(f"{'Timestamp':<19} | {'User':<15} | {'Action':<20} | {'Details':<30} | Suspicious")
             print("-" * 105)
 
-            for log in logs[-100:]:  # Laatste 100 logs max
+            for log in logs[-100:]:  # Toon laatste 100 logs indien veel
                 timestamp, username, action, info, suspicious = log
                 print(f"{timestamp:<19} | {username:<15} | {action:<20} | {info:<30} | {suspicious}")
 
@@ -795,6 +801,7 @@ def view_system_logs():
         print(f"Error: {str(e)}")
         input("\nPress Enter to continue...")
         return "error"
+
 
 
 # =============================================================================
