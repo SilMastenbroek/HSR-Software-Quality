@@ -1,19 +1,15 @@
 import sqlite3
 import hashlib
 from datetime import datetime
-from pathlib import Path
 from Models.database import create_connection
-from Controllers.encryption import encrypt_field, initialize_encryption
-
+from Controllers.encryption import encrypt_field, initialize_encryption, hash_password
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-
 def user_exists(cursor, username):
     cursor.execute("SELECT 1 FROM users WHERE lower(username) = lower(?)", (username,))
     return cursor.fetchone() is not None
-
 
 def seed_users():
     initialize_encryption()
@@ -21,6 +17,13 @@ def seed_users():
     cursor = conn.cursor()
 
     users_to_add = [
+        {
+            "username": "super_admin",
+            "password": "Admin_123?",
+            "role": "super_admin",
+            "first_name": "Admin",
+            "last_name": "User"
+        },
         {
             "username": "sysadmin1",
             "password": "SecurePass_456!",
@@ -58,7 +61,6 @@ def seed_users():
 
     conn.commit()
     conn.close()
-
 
 if __name__ == "__main__":
     seed_users()

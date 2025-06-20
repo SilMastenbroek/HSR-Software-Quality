@@ -10,6 +10,7 @@ from src.Controllers.logger import log_event
 from src.Views.menu_utils import clear_screen, print_header, ask_password, ask_serial_number, ask_general
 from src.Views.menu_selections import ask_menu_choice, execute_menu_selection, display_menu_and_execute, ask_yes_no
 from src.Controllers.user import UserController
+from src.Controllers.hashing import hash_password
 from src.Controllers.auth import get_logged_in_username
 from src.Views.menu_utils import askLogin, clear_screen
 
@@ -95,7 +96,6 @@ def update_own_password():
 
         success_password_update = UserController.update_user(username=username, password_hash=hashed_pw)
         
-
         if success_password_update:
             log_event("engineer", "Password successfully updated", f"User: {username}", False)
             clear_screen()
