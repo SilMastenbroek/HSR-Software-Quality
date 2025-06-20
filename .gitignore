@@ -183,3 +183,7 @@ log.key
 
 # Encryption key
 encryption.key
+
+#database
+.db
+.zip

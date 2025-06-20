@@ -91,11 +91,82 @@ def create_enhanced_system_backup():
     Create system backup with Super Admin privileges.
     Enhanced backup functionality for Super Admin.
     """
-    clear_screen()
-    print_header("CREATE ENHANCED SYSTEM BACKUP")
-    print("Not implemented")
-    input("\nPress Enter to continue...")
-    return "not_implemented"
+    log_event("super_admin", "Enhanced system backup initiated", "Super Admin backup creation", False)
+    
+    # Check super admin permissions
+    if not has_required_role(UserRole.SuperAdmin):
+        log_event("super_admin", "Enhanced backup access denied", "Insufficient permissions", True)
+        clear_screen()
+        print_header("ACCESS DENIED")
+        print("You do not have Super Administrator permissions.")
+        print("Required role: Super Administrator")
+        input("\nPress Enter to continue...")
+        return "access_denied"
+    
+    try:
+        clear_screen()
+        print_header("CREATE ENHANCED SYSTEM BACKUP")
+        
+        print("Enhanced System Backup Process:")
+        print("• Creates complete database backup with Super Admin privileges")
+        print("• All tables and data will be backed up securely")
+        print("• Backup will be timestamped and encrypted")
+        print("• Stored in secure backup directory")
+        print()
+        
+        if not ask_yes_no("Are you sure you want to create an enhanced system backup?", "Confirm Enhanced Backup"):
+            log_event("super_admin", "Enhanced backup cancelled", "User cancelled operation", False)
+            return "cancelled"
+        
+        # Use UserController to select a user for backup attribution
+        selected_user = user_controller.display_user_selection_menu("SELECT USER FOR BACKUP ATTRIBUTION")
+        
+        if selected_user is None:
+            log_event("super_admin", "Enhanced backup cancelled", "No user selected", False)
+            return "cancelled"
+        
+        print(f"\nCreating enhanced system backup for user: {selected_user['username']}")
+        print("Please wait...")
+        
+        # Use the create_backup function from dbbackup.py with selected username
+        backup_result = create_backup(selected_user['username'])
+        
+        if backup_result['success']:
+            log_event("super_admin", "Enhanced system backup created successfully", 
+                     f"Backup code: {backup_result['backup_code']}, User: {selected_user['username']}", False)
+            
+            clear_screen()
+            print_header("ENHANCED BACKUP CREATED SUCCESSFULLY")
+            print("Enhanced system backup completed successfully:")
+            print(f"• Backup code: {backup_result['backup_code']}")
+            print(f"• Created by: {selected_user['username']}")
+            print(f"• Created: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            print(f"• Super Admin privileges: Applied")
+            print()
+
+            
+        else:
+            log_event("super_admin", "Enhanced system backup failed", 
+                     f"Error: {backup_result.get('error', 'Unknown error')}", True)
+            
+            clear_screen()
+            print_header("ENHANCED BACKUP CREATION FAILED")
+            print("Enhanced system backup failed:")
+            print(f"• Error: {backup_result.get('error', 'Unknown error')}")
+            print("• Please check system logs for details")
+            print("• Contact system administrator if problem persists")
+            print("• Ensure backup directory is accessible")
+        
+        input("\nPress Enter to continue...")
+        return "success" if backup_result['success'] else "failed"
+        
+    except Exception as e:
+        log_event("super_admin", "Enhanced backup error", f"Unexpected error: {str(e)}", True)
+        clear_screen()
+        print_header("ENHANCED BACKUP ERROR")
+        print(f"Unexpected error occurred: {str(e)}")
+        input("\nPress Enter to continue...")
+        return "error"
 
 
 def view_super_admin_logs():
