@@ -69,18 +69,12 @@ def login(username, password):
 
 
 def authenticate_user(username, password):
-    print(username, password)
-    print()
-
     is_valid, role = login(username, password)
-
-    print(is_valid, role)
 
     if not is_valid:
         print("Authentication failed.")
         return None
 
-    print(role)
     set_logged_user_role(role)
     set_logged_in_username(username)
 
