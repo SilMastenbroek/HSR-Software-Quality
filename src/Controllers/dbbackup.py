@@ -9,29 +9,32 @@ from src.Models.database import create_connection
 from src.Controllers.encryption import encrypt_field
 from src.Controllers.encryption import decrypt_field
 
-def create_backup(backup_code: str):
+def create_backup(username: str):
     """
     Create backup from current database
 
     Args:
-        no args
+        username (str): Username of the person initiating the backup
         
     Returns:
-        True or false, depends on if the backup succeeded
+        dict: Dictionary with success status, backup_code, and other info
     """
-    log_event("dbbackup", "Database backup started", f"initiated by {get_username()}", False) 
+    log_event("dbbackup", "Database backup started", f"initiated by {username}", False) 
     if not has_required_role(UserRole.SuperAdmin):
-        log_event("dbbackup", "Database backup function called without permission", f"initiated by {get_username()}", True)
-        return False
+        log_event("dbbackup", "Database backup function called without permission", f"initiated by {username}", True)
+        return {'success': False, 'error': 'Insufficient permissions'}
 
     try:
+        # Generate unique backup code
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        backup_code = f"BCK_{username.upper()[:3]}_{timestamp}"
+        
         # Create backup directory if it doesn't exist
         backup_dir = Path("backups")
         backup_dir.mkdir(exist_ok=True)
         
         # Generate backup filename with timestamp
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        backup_filename = f"backup_{backup_code}_{timestamp}.zip"
+        backup_filename = f"backup_{backup_code}.zip"
         backup_path = backup_dir / backup_filename
         
         # Create zip file with selected tables
@@ -72,32 +75,40 @@ def create_backup(backup_code: str):
             # Add backup metadata
             metadata = f"""Backup Created: {datetime.now().isoformat()}
 Backup Code: {backup_code}
-Created By: {get_username()}
+Created By: {username}
 Tables Exported: users, travellers, scooters
 Format: CSV
 """
             zipf.writestr("backup_metadata.txt", metadata)
         
-        # Record backup in database
+        # Record backup in database with username link
         with create_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                INSERT INTO backups (path, backup_code, created_by)
-                VALUES (?, ?, ?)
+                INSERT INTO backups (path, backup_code, created_by_username, restore_allowed_username)
+                VALUES (?, ?, ?, ?)
             """, (
                 str(backup_path),
                 backup_code,
-                encrypt_field(get_username())
+                encrypt_field(get_username()),
+                encrypt_field(username)
             ))
             conn.commit()
         
         log_event("dbbackup", "Database backup completed successfully", 
-                 f"File: {backup_filename}, Code: {backup_code}", False)
-        return True
+             f"File: {backup_filename}, Code: {backup_code}, User: {username}", False)
+        
+        return {
+            'success': True,
+            'backup_code': backup_code,
+            'filename': backup_filename,
+            'path': str(backup_path),
+            'size': f"{backup_path.stat().st_size} bytes" if backup_path.exists() else "Unknown"
+        }
         
     except Exception as e:
         log_event("dbbackup", "Database backup failed", f"Error: {str(e)}", True)
-        return False
+        return {'success': False, 'error': str(e)}
     
 def restore_backup(backup_code: str):
     """
@@ -111,7 +122,7 @@ def restore_backup(backup_code: str):
     """
     log_event("dbbackup", "Database restore started", f"initiated by {get_username()}, code: {backup_code}", False)
     
-    if not has_required_role(UserRole.SuperAdmin):
+    if not has_required_role(UserRole.SystemAdmin):
         log_event("dbbackup", "Database restore function called without permission", f"initiated by {get_username()}", True)
         return False
 
@@ -119,7 +130,7 @@ def restore_backup(backup_code: str):
         # Find backup file by code
         with create_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT path FROM backups WHERE backup_code = ?", (backup_code,))
+            cursor.execute("SELECT path, created_by_username, restore_allowed_username FROM backups WHERE backup_code = ?", (backup_code,))
             result = cursor.fetchone()
             
             if not result:
@@ -127,9 +138,27 @@ def restore_backup(backup_code: str):
                 return False
             
             backup_path = Path(result[0])
+            created_by_encrypted = result[1]
+            restore_allowed_encrypted = result[2]
             
             if not backup_path.exists():
                 log_event("dbbackup", "Backup file not found on disk", f"Path: {backup_path}", True)
+                return False
+        
+        # Check permissions for SystemAdmin users
+        if has_required_role(UserRole.SystemAdmin) and not has_required_role(UserRole.SuperAdmin):
+            current_username = get_username()
+            
+            # Decrypt the restore_allowed_username to check if current user can restore
+            try:
+                restore_allowed_username = decrypt_field(restore_allowed_encrypted)
+                if current_username != restore_allowed_username:
+                    log_event("dbbackup", "Database restore denied - not authorized user", 
+                             f"User: {current_username}, Allowed: {restore_allowed_username}", True)
+                    return False
+            except Exception as decrypt_error:
+                log_event("dbbackup", "Database restore failed - decryption error", 
+                         f"Error: {str(decrypt_error)}", True)
                 return False
         
         # Extract and restore from backup
@@ -138,9 +167,9 @@ def restore_backup(backup_code: str):
                 cursor = conn.cursor()
                 
                 # Clear existing data
-                cursor.execute("TRUNCATE TABLE users")
-                cursor.execute("TRUNCATE TABLE travellers") 
-                cursor.execute("TRUNCATE TABLE scooters")
+                cursor.execute("DELETE FROM users")
+                cursor.execute("DELETE FROM travellers") 
+                cursor.execute("DELETE FROM scooters")
                 
                 # Restore users table
                 if "users.csv" in zipf.namelist():
