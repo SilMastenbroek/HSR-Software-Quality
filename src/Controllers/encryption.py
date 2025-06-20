@@ -95,14 +95,6 @@ def decrypt_field(encrypted_value):
     except Exception:
         return encrypted_value  # fallback: Return original value if decryption fails
 
-def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode('utf-8')).hexdigest()
-
-def verify_password(password: str, hashed: str) -> bool:
-    return hash_password(password) == hashed
-
-
-
 # TODO: latr kijken of we dit nodig hebben:
 
 # def generate_key_from_password(password, salt=None):
