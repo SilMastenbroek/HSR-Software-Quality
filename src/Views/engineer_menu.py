@@ -8,10 +8,9 @@ Implements role-based access control and modular design for easy integration wit
 from src.Controllers.authorization import UserRole, has_required_role
 from src.Controllers.logger import log_event
 from src.Views.menu_utils import clear_screen, print_header, ask_password, ask_serial_number, ask_general
-from src.Views.menu_selections import ask_menu_choice, execute_menu_selection, display_menu_and_execute, ask_yes_no
+from src.Views.menu_selections import display_menu_and_execute, ask_yes_no
 from src.Controllers.user import UserController
 from src.Controllers.hashing import hash_password
-from src.Controllers.auth import get_logged_in_username
 from src.Views.menu_utils import askLogin, clear_screen
 
 # =============================================================================
