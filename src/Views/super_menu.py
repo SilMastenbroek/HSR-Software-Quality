@@ -7,16 +7,19 @@ Includes all admin functions plus super admin exclusive functionality.
 """
 
 from src.Controllers.authorization import UserRole, has_required_role
-from src.Controllers.logger import log_event
+from src.Controllers.logger import log_event, read_logs
 from src.Controllers.user import UserController
 from src.Controllers.input_validation import InputValidator
 from src.Views.menu_utils import *
+from src.Views.menu_selections import ask_yes_no, display_menu_and_execute
 from src.Views.menu_selections import display_menu_and_execute, ask_yes_no
 from src.Controllers.hashing import hash_password
+
 import secrets
 import string
 from datetime import datetime, timedelta
 import os
+from src.Views.engineer_menu import get_engineer_functions_only
 
 
 # Initialize controllers
@@ -95,7 +98,7 @@ def get_admin_functions_for_super_admin():
             },
             'admin_view_logs': {
                 'title': '[ADMIN] View System Logs',
-                'function': view_system_logs,
+                'function': read_logs,
                 'required_role': UserRole.SuperAdmin
             }
         }
@@ -609,6 +612,7 @@ def get_super_admin_menu_config():
     try:
         # Get admin functions for inheritance
         admin_functions = get_admin_functions_for_super_admin()
+        engineer_functions = get_engineer_functions_only()
         
         # Super Admin exclusive functions
         super_admin_exclusive = {
@@ -642,6 +646,12 @@ def get_super_admin_menu_config():
         # Add inherited admin functions starting from menu item 10
         next_number = 10
         for func_key, func_data in admin_functions.items():
+            super_admin_exclusive[str(next_number)] = func_data
+            next_number += 1
+
+        # Add inherited engineer functions starting from menu item 10
+        next_number = 20
+        for func_key, func_data in engineer_functions.items():
             super_admin_exclusive[str(next_number)] = func_data
             next_number += 1
         
@@ -699,6 +709,7 @@ def run_super_admin_menu():
     try:
         # Get complete menu configuration (includes admin functions)
         menu_config = get_super_admin_menu_config()
+    
         
         # Run the menu system
         result = display_menu_and_execute(

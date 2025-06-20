@@ -29,6 +29,8 @@ def log_event(username, action, extra_info="", suspicious=False):
         file.write(encrypted + b"\n")
 
 def read_logs():
+    # TODO fix deze shitzzle Sil
+    print("logs")
     f = _get_fernet()
     if not os.path.exists(LOG_FILE):
         return []

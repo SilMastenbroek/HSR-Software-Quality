@@ -1,9 +1,9 @@
 import sqlite3
 import hashlib
 from src.Controllers.logger import log_event
-from src.Models.database import create_connection
+from src.Models.database import create_connection, get_db_connection
 from src.Controllers.authorization import set_logged_user_role
-from src.Controllers.encryption import decrypt_field
+from src.Controllers.encryption import decrypt_field, hash_password, verify_password
 
 """
 Thomas: 
@@ -64,8 +64,50 @@ def authenticate_user(username, password):
 
     print(role)
     set_logged_user_role(role)
+    set_logged_in_username(username)
 
     return {
         "username": username,
         "role": role
     }
+
+def update_user_password(username: str, current_password: str, new_password: str) -> bool:
+    conn = get_db_connection()
+    c = conn.cursor()
+
+    # Haal alle gebruikers op
+    c.execute("SELECT username, password_hash FROM users")
+    users = c.fetchall()
+
+    for row in users:
+        try:
+            decrypted_username = decrypt_field(row["username"])
+        except Exception:
+            continue  # Skip als decryptie mislukt
+
+        if decrypted_username.lower() == username.lower():
+            if not verify_password(current_password, row["password_hash"]):
+                return False  # Huidig wachtwoord klopt niet
+
+            # Hash en update
+            new_hash = hash_password(new_password)
+            c.execute(
+                "UPDATE users SET password_hash = ? WHERE username = ?",
+                (new_hash, row["username"])  # versleutelde username blijft ongewijzigd
+            )
+            conn.commit()
+            return True
+
+    return False
+
+
+
+
+_logged_in_username = None  # Globale variabele om ingelogde gebruiker bij te houden
+
+def set_logged_in_username(username):
+    global _logged_in_username
+    _logged_in_username = username
+
+def get_logged_in_username():
+    return _logged_in_username
