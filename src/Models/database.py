@@ -60,6 +60,15 @@ def setup_database():
             in_service_date TEXT
         )""")
 
+        # Backups
+        c.execute("""CREATE TABLE IF NOT EXISTS backups (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            path TEXT NOT NULL,
+            backup_code TEXT,
+            backup_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+            created_by TEXT
+        )""")
+
         conn.commit()
 
 # Voeg ondersteuning toe om kolomnamen te gebruiken in resultaten

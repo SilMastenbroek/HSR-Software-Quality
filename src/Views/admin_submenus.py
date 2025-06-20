@@ -8,6 +8,7 @@ Implements role-based access control and modular design.
 
 from src.Controllers.authorization import UserRole, has_required_role
 from src.Controllers.logger import log_event
+from src.Views.dbbackup_view import run_backup_menu
 from src.Views.menu_selections import display_menu_and_execute
 
 # Import admin-specific view functions that use Controllers
@@ -167,6 +168,11 @@ def admin_backup_submenu():
         '2': {
             'title': 'View System Logs',
             'function': view_system_logs,
+            'required_role': UserRole.SystemAdmin
+        },
+        '6': {
+            'title': 'Database Backup Management',
+            'function': run_backup_menu,
             'required_role': UserRole.SystemAdmin
         },
         '0': {

@@ -1,3 +1,5 @@
+from seed_scooters import seed_scooters
+from seed_users import seed_users
 from src.Views.admin_menu import run_admin_menu
 from src.Views.engineer_menu import run_engineer_menu
 from src.Views.super_menu import run_super_admin_menu
@@ -7,6 +9,7 @@ from src.Controllers.auth import authenticate_user
 from src.Controllers.logger import get_unread_suspicious_logs
 from src.Views.menu_utils import askLogin, clear_screen
 from src.Controllers.encryption import initialize_encryption
+from src.Views.admin_submenus import *
 
 
 def post_login_notice(role):
@@ -20,18 +23,19 @@ def post_login_notice(role):
 
 def main():
     setup_database()
+    seed_users()
+    seed_scooters()
     initialize_encryption()
 
     # Example Login:
 
     # success, username, password = askLogin()
     # REMOVE THIS
-    # success = True
-    # username = "super_admin"
-    # password = "Admin_123?"
+    username = "super_admin"
+    password = "Admin_123?"
 
-    username = "engineer2"
-    password = "Engineer@789!"
+    # username = "engineer2"
+    # password = "Engineer@789!"
     success = True
 
     if success:
@@ -55,15 +59,18 @@ def main():
         # Show post-login notices
         post_login_notice(user_role)
 
-        # Role-based menu selection
+        # Role-based menu selection with enhanced descriptions
         if has_required_role(UserRole.SuperAdmin):
             print("Starting Super Administrator menu...")
+            print("Access to all system functions and management tools")
             result = run_super_admin_menu()
         elif has_required_role(UserRole.SystemAdmin):
             print("Starting System Administrator menu...")
+            print("Organized submenus: Scooter Management, User Management, System Backup & Logs")
             result = run_admin_menu()
         elif has_required_role(UserRole.ServiceEngineer):
             print("Starting Service Engineer menu...")
+            print("Access to maintenance and repair functions")
             result = run_engineer_menu()
         else:
             print("No menu available for your role.")

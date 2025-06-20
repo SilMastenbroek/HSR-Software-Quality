@@ -3,24 +3,43 @@ Super Admin Menu Module
 
 This module provides menu configurations and functions specifically for Super Administrators.
 Implements role-based access control and modular design for easy integration with other menus.
-Includes all admin functions plus super admin exclusive functionality.
+Includes all admin functions plus super admin exclusive functionality organized in submenus.
 """
 
 from src.Controllers.authorization import UserRole, has_required_role
+from src.Controllers.dbbackup import create_backup
 from src.Controllers.logger import log_event, read_logs
 from src.Controllers.user import UserController
 from src.Controllers.input_validation import InputValidator
 from src.Views.menu_utils import *
 from src.Views.menu_selections import ask_yes_no, display_menu_and_execute
-from src.Views.menu_selections import display_menu_and_execute, ask_yes_no
 from src.Controllers.hashing import hash_password
 
 import secrets
 import string
 from datetime import datetime, timedelta
 import os
-from src.Views.engineer_menu import get_engineer_functions_only
 
+# Import admin submenus for inheritance
+from src.Views.admin_submenus import (
+    admin_scooter_submenu,
+    admin_traveller_submenu,
+    admin_user_submenu,
+    admin_backup_submenu
+)
+
+# Import admin views for super admin exclusive functions
+from src.Views.admin_views import (
+    admin_update_own_password,
+    view_all_users_and_roles,
+    add_new_service_engineer,
+    admin_view_and_search_all_scooters,
+    add_scooter_to_system,
+    view_and_search_travellers,
+    add_traveller_to_system,
+    create_system_backup,
+    view_system_logs
+)
 
 # Initialize controllers
 user_controller = UserController()
@@ -28,94 +47,7 @@ validator = InputValidator()
 
 
 # =============================================================================
-# ADMIN FUNCTIONS ACCESS FOR SUPER ADMIN
-# =============================================================================
-
-def get_admin_functions_for_super_admin():
-    """
-    Get admin functions configuration for Super Admin inheritance.
-    Imports admin functions directly for Super Admin access.
-    
-    Returns: dict: Admin functions configuration
-    """
-    log_event("super_admin", "Loading admin functions for Super Admin", "Function inheritance", False)
-    
-    try:
-        # Import admin views directly
-        from src.Views.admin_views import (
-            admin_update_own_password,
-            view_all_users_and_roles,
-            add_new_service_engineer,
-            admin_view_and_search_all_scooters,
-            add_scooter_to_system,
-            view_and_search_travellers,
-            add_traveller_to_system,
-            create_system_backup,
-            view_system_logs
-        )
-        
-        # Return admin functions that Super Admin can inherit
-        admin_functions = {
-            'admin_password_update': {
-                'title': '[ADMIN] Update Admin Password',
-                'function': admin_update_own_password,
-                'required_role': UserRole.SuperAdmin
-            },
-            'admin_view_users': {
-                'title': '[ADMIN] View All Users and Roles',
-                'function': view_all_users_and_roles,
-                'required_role': UserRole.SuperAdmin
-            },
-            'admin_add_service_engineer': {
-                'title': '[ADMIN] Add New Service Engineer',
-                'function': add_new_service_engineer,
-                'required_role': UserRole.SuperAdmin
-            },
-            'admin_view_scooters': {
-                'title': '[ADMIN] View and Search All Scooters',
-                'function': admin_view_and_search_all_scooters,
-                'required_role': UserRole.SuperAdmin
-            },
-            'admin_add_scooter': {
-                'title': '[ADMIN] Add Scooter to System',
-                'function': add_scooter_to_system,
-                'required_role': UserRole.SuperAdmin
-            },
-            'admin_view_travellers': {
-                'title': '[ADMIN] View and Search Travellers',
-                'function': view_and_search_travellers,
-                'required_role': UserRole.SuperAdmin
-            },
-            'admin_add_traveller': {
-                'title': '[ADMIN] Add Traveller to System',
-                'function': add_traveller_to_system,
-                'required_role': UserRole.SuperAdmin
-            },
-            'admin_system_backup': {
-                'title': '[ADMIN] Create System Backup',
-                'function': create_system_backup,
-                'required_role': UserRole.SuperAdmin
-            },
-            'admin_view_logs': {
-                'title': '[ADMIN] View System Logs',
-                'function': read_logs,
-                'required_role': UserRole.SuperAdmin
-            }
-        }
-        
-        log_event("super_admin", "Admin functions loaded successfully", f"Loaded {len(admin_functions)} functions", False)
-        return admin_functions
-        
-    except ImportError as e:
-        log_event("super_admin", "Failed to load admin functions", f"Import error: {str(e)}", True)
-        return {}
-    except Exception as e:
-        log_event("super_admin", "Error loading admin functions", f"Error: {str(e)}", True)
-        return {}
-
-
-# =============================================================================
-# SUPER ADMIN FUNCTIONS - SYSTEM ADMIN MANAGEMENT
+# SUPER ADMIN EXCLUSIVE FUNCTIONS - SYSTEM ADMIN MANAGEMENT
 # =============================================================================
 
 def add_new_system_admin():
@@ -185,7 +117,7 @@ def add_new_system_admin():
         
         # Generate secure temporary password
         temp_password = generate_secure_password()
-        registration_date=datetime.now().isoformat()
+        registration_date = datetime.now().isoformat()
 
         hashed_pw = hash_password(
             password=temp_password,
@@ -198,7 +130,7 @@ def add_new_system_admin():
         # Use Controller to create system admin
         success = user_controller.create_user(
             username=username,
-            password_hash=hashed_pw,  # TODO: Hash this properly
+            password_hash=hashed_pw,
             role='system_admin',
             first_name=first_name,
             last_name=last_name,
@@ -583,6 +515,166 @@ def view_super_admin_logs():
 
 
 # =============================================================================
+# SUPER ADMIN SUBMENU FUNCTIONS
+# =============================================================================
+
+def super_admin_exclusive_submenu():
+    """
+    Super Admin exclusive functions submenu.
+    Groups Super Admin only functions together.
+    """
+    log_event("super_admin", "Super Admin exclusive submenu accessed", "Super Admin exclusive menu", False)
+    
+    exclusive_menu = {
+        '1': {
+            'title': 'Add New System Administrator',
+            'function': add_new_system_admin,
+            'required_role': UserRole.SuperAdmin
+        },
+        '2': {
+            'title': 'View and Search System Administrators',
+            'function': view_and_search_system_admins,
+            'required_role': UserRole.SuperAdmin
+        },
+        '3': {
+            'title': 'Reset One-Time Password for System Admin',
+            'function': reset_admin_one_time_password,
+            'required_role': UserRole.SuperAdmin
+        },
+        '4': {
+            'title': 'Create Enhanced System Backup',
+            'function': create_enhanced_system_backup,
+            'required_role': UserRole.SuperAdmin
+        },
+        '5': {
+            'title': 'View Super Admin System Logs',
+            'function': view_super_admin_logs,
+            'required_role': UserRole.SuperAdmin
+        },
+        '0': {
+            'title': 'Return to Super Admin Menu',
+            'function': lambda: "return",
+            'required_role': None
+        }
+    }
+    
+    result = display_menu_and_execute(
+        menu_items=exclusive_menu,
+        header="SUPER ADMIN - EXCLUSIVE FUNCTIONS",
+        max_attempts=3,
+        required_role=UserRole.SuperAdmin,
+        loop_menu=True
+    )
+    
+    log_event("super_admin", "Super Admin exclusive submenu completed", f"Result: {result}", False)
+    return result
+
+
+def super_admin_enhanced_user_submenu():
+    """
+    Enhanced user management submenu with Super Admin privileges.
+    Extends admin user management with super admin functions.
+    """
+    log_event("super_admin", "Super Admin enhanced user submenu accessed", "Enhanced user management", False)
+    
+    enhanced_user_menu = {
+        '1': {
+            'title': '[SUPER] Add New System Administrator',
+            'function': add_new_system_admin,
+            'required_role': UserRole.SuperAdmin
+        },
+        '2': {
+            'title': '[SUPER] View System Administrators',
+            'function': view_and_search_system_admins,
+            'required_role': UserRole.SuperAdmin
+        },
+        '3': {
+            'title': '[SUPER] Reset Admin One-Time Password',
+            'function': reset_admin_one_time_password,
+            'required_role': UserRole.SuperAdmin
+        },
+        '4': {
+            'title': '[ADMIN] View All Users and Roles',
+            'function': view_all_users_and_roles,
+            'required_role': UserRole.SuperAdmin
+        },
+        '5': {
+            'title': '[ADMIN] Add New Service Engineer',
+            'function': add_new_service_engineer,
+            'required_role': UserRole.SuperAdmin
+        },
+        '0': {
+            'title': 'Return to Super Admin Menu',
+            'function': lambda: "return",
+            'required_role': None
+        }
+    }
+    
+    result = display_menu_and_execute(
+        menu_items=enhanced_user_menu,
+        header="SUPER ADMIN - ENHANCED USER MANAGEMENT",
+        max_attempts=3,
+        required_role=UserRole.SuperAdmin,
+        loop_menu=True
+    )
+    
+    log_event("super_admin", "Super Admin enhanced user submenu completed", f"Result: {result}", False)
+    return result
+
+
+def super_admin_enhanced_backup_submenu():
+    """
+    Enhanced backup submenu with Super Admin privileges.
+    Extends admin backup functions with super admin capabilities.
+    """
+    log_event("super_admin", "Super Admin enhanced backup submenu accessed", "Enhanced backup management", False)
+    
+    enhanced_backup_menu = {
+        '1': {
+            'title': '[SUPER] Create Enhanced System Backup',
+            'function': create_enhanced_system_backup,
+            'required_role': UserRole.SuperAdmin
+        },
+        '2': {
+            'title': '[SUPER] View Super Admin System Logs',
+            'function': view_super_admin_logs,
+            'required_role': UserRole.SuperAdmin
+        },
+        '3': {
+            'title': '[ADMIN] Create System Backup',
+            'function': create_system_backup,
+            'required_role': UserRole.SuperAdmin
+        },
+        '4': {
+            'title': '[ADMIN] View System Logs',
+            'function': view_system_logs,
+            'required_role': UserRole.SuperAdmin
+        },
+        '5': {
+            'title': '[ADMIN] Database Backup Management',
+            'function': create_backup,
+            'required_role': UserRole.SuperAdmin
+        },
+        '0': {
+            'title': 'Return to Super Admin Menu',
+            'function': lambda: "return",
+            'required_role': None
+        }
+    }
+    
+    result = display_menu_and_execute(
+        menu_items=enhanced_backup_menu,
+        header="SUPER ADMIN - ENHANCED BACKUP & LOGS",
+        max_attempts=3,
+        required_role=UserRole.SuperAdmin,
+        loop_menu=True
+    )
+    
+    log_event("super_admin", "Super Admin enhanced backup submenu completed", f"Result: {result}", False)
+    return result
+
+
+# =============================================================================
 # HELPER FUNCTIONS
 # =============================================================================
 
@@ -599,79 +691,77 @@ def super_admin_menu_exit():
 
 
 # =============================================================================
-# MENU CONFIGURATIONS
+# MAIN MENU CONFIGURATION
 # =============================================================================
 
 def get_super_admin_menu_config():
     """
-    Get the complete super admin menu configuration.
-    Includes super admin exclusive functions plus inherited admin functions.
+    Get the complete super admin menu configuration organized in submenus.
+    Uses the same submenu structure as admin menu but with super admin privileges.
     
     Returns: dict: Menu configuration dictionary
     """
     try:
-        # Get admin functions for inheritance
-        admin_functions = get_admin_functions_for_super_admin()
-        engineer_functions = get_engineer_functions_only()
-        
-        # Super Admin exclusive functions
-        super_admin_exclusive = {
+        super_admin_main_menu = {
+            # Personal Account Functions
             '1': {
-                'title': 'Add New System Administrator',
-                'function': add_new_system_admin,
+                'title': 'Update Own Password',
+                'function': admin_update_own_password,
                 'required_role': UserRole.SuperAdmin
             },
+            
+            # Super Admin Exclusive Functions
             '2': {
-                'title': 'View and Search System Administrators',
-                'function': view_and_search_system_admins,
+                'title': 'Super Admin Exclusive Functions',
+                'function': super_admin_exclusive_submenu,
                 'required_role': UserRole.SuperAdmin
             },
+            
+            # Enhanced Organized Submenus
             '3': {
-                'title': 'Reset One-Time Password for System Admin',
-                'function': reset_admin_one_time_password,
+                'title': 'Enhanced User Management',
+                'function': super_admin_enhanced_user_submenu,
                 'required_role': UserRole.SuperAdmin
             },
             '4': {
-                'title': 'Create Enhanced System Backup',
-                'function': create_enhanced_system_backup,
+                'title': 'Scooter Management (Admin Access)',
+                'function': admin_scooter_submenu,
                 'required_role': UserRole.SuperAdmin
             },
             '5': {
-                'title': 'View Super Admin System Logs',
-                'function': view_super_admin_logs,
+                'title': 'Traveller Management (Admin Access)',
+                'function': admin_traveller_submenu,
                 'required_role': UserRole.SuperAdmin
+            },
+            '6': {
+                'title': 'Enhanced Backup & Logs',
+                'function': super_admin_enhanced_backup_submenu,
+                'required_role': UserRole.SuperAdmin
+            },
+            
+            # Exit Option
+            '0': {
+                'title': 'Exit Super Admin Menu',
+                'function': super_admin_menu_exit,
+                'required_role': None
             }
         }
         
-        # Add inherited admin functions starting from menu item 10
-        next_number = 10
-        for func_key, func_data in admin_functions.items():
-            super_admin_exclusive[str(next_number)] = func_data
-            next_number += 1
-
-        # Add inherited engineer functions starting from menu item 10
-        next_number = 20
-        for func_key, func_data in engineer_functions.items():
-            super_admin_exclusive[str(next_number)] = func_data
-            next_number += 1
-        
-        # Add exit option
-        super_admin_exclusive['0'] = {
-            'title': 'Exit Super Admin Menu',
-            'function': super_admin_menu_exit,
-            'required_role': None
-        }
-        
-        log_event("super_admin", "Super admin menu config created", f"Total functions: {len(super_admin_exclusive)}", False)
-        return super_admin_exclusive
+        log_event("super_admin", "Super admin menu config created", f"Total menu items: {len(super_admin_main_menu)}", False)
+        return super_admin_main_menu
         
     except Exception as e:
         log_event("super_admin", "Error creating super admin menu config", f"Error: {str(e)}", True)
         # Return basic config if there's an error
         return {
             '1': {
-                'title': 'Add New System Administrator',
-                'function': add_new_system_admin,
+                'title': 'Update Own Password',
+                'function': admin_update_own_password,
+                'required_role': UserRole.SuperAdmin
+            },
+            '2': {
+                'title': 'Super Admin Exclusive Functions',
+                'function': super_admin_exclusive_submenu,
                 'required_role': UserRole.SuperAdmin
             },
             '0': {
@@ -689,7 +779,7 @@ def get_super_admin_menu_config():
 def run_super_admin_menu():
     """
     Main function to run the super admin menu system.
-    Provides the complete super administrator menu experience.
+    Provides the complete super administrator menu experience with organized submenus.
     
     Returns: str: Result of menu execution
     """
@@ -707,11 +797,10 @@ def run_super_admin_menu():
         return "access_denied"
     
     try:
-        # Get complete menu configuration (includes admin functions)
+        # Get organized menu configuration
         menu_config = get_super_admin_menu_config()
-    
         
-        # Run the menu system
+        # Run the menu system with submenus
         result = display_menu_and_execute(
             menu_items=menu_config,
             header="SUPER ADMINISTRATOR MENU",
@@ -739,6 +828,9 @@ def run_super_admin_menu():
 __all__ = [
     'get_super_admin_menu_config',
     'run_super_admin_menu',
+    'super_admin_exclusive_submenu',
+    'super_admin_enhanced_user_submenu',
+    'super_admin_enhanced_backup_submenu',
     'add_new_system_admin',
     'view_and_search_system_admins',
     'reset_admin_one_time_password',
