@@ -1,60 +1,68 @@
 import sqlite3
+import hashlib
 from src.Controllers.logger import log_event
-from src.Models.database import create_connection
+from src.Models.database import create_connection, get_db_connection
 from src.Controllers.authorization import set_logged_user_role
 from src.Controllers.encryption import decrypt_field
-from src.Controllers.hashing import hash_password 
+from src.Controllers.hashing import hash_password
+from src.Controllers.user import UserController
 
+
+Leugens..
+"""
+# def hash_password(password: str) -> str:
+#     """Hash het wachtwoord met SHA-256 (of gebruik bcrypt als je dat implementeert)."""
+#     return hashlib.sha256(password.encode()).hexdigest()
 
 def login(username, password):
     if username == "super_admin" and password == "Admin_123?":
         return True, "super_admin"
 
     conn = create_connection()
+    conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
     try:
-        cursor.execute("""
-            SELECT username, password_hash, role, first_name, last_name, registration_date
-            FROM users
-        """)
-        users = cursor.fetchall()
+        # Zoek gebruiker direct op via WHERE
+        cursor.execute("SELECT username, password_hash, role FROM users WHERE lower(username) = ?", (username.lower(),))
+        user = cursor.fetchone()
 
-        for encrypted_username, password_hash_db, role, enc_fname, enc_lname, registration_date in users:
-            try:
-                decrypted_username = decrypt_field(encrypted_username)
-                decrypted_role = decrypt_field(role)
-                decrypted_fname = decrypt_field(enc_fname)
-                decrypted_lname = decrypt_field(enc_lname)
-                decrypted_hash = decrypt_field(password_hash_db)
-            except Exception:
-                continue  # overslaan als decryptie faalt
+        user_data = UserController.read_user(username=username)
 
-            if decrypted_username.lower() == username.lower():
-                hashed_input = hash_password(
-                    password=password,
-                    username=decrypted_username,
-                    first_name=decrypted_fname,
-                    last_name=decrypted_lname,
-                    registration_date=registration_date
-                )
+        # Hashed wachtwoord met de userdata
+        hashed_pw = hash_password(
+            password=password,
+            username=user_data["username"],
+            first_name=user_data["first_name"],
+            last_name=user_data["last_name"],
+            registration_date=user_data["registration_date"]
+        )
 
-                if hashed_input == decrypted_hash:
-                    log_event(decrypted_username, "Login successful")
-                    return True, decrypted_role
-                else:
-                    log_event(decrypted_username, "Login failed (wrong password)", suspicious=True)
-                    return False, None
+        decrypted_password = decrypt_field(user["password_hash"])
 
+        if user:
+            if hashed_pw == decrypted_password:
+                log_event(user["username"], "Login successful")
+                return True, user["role"]
+            else:
+                log_event(user["username"], "Login failed (wrong password)", suspicious=True)
+                return False, None
+
+        # Geen gebruiker gevonden
         log_event(username, "Login failed (unknown user)", suspicious=True)
         return False, None
 
     except sqlite3.Error as e:
+
+        print("ERROR")
+        exit()
+
         log_event("system", "Login error", str(e), suspicious=True)
         return False, None
 
     finally:
         conn.close()
+
 
 
 def authenticate_user(username, password):
