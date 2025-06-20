@@ -43,6 +43,12 @@ def update_own_password():
         print("\nStep 1: Verify Current Username and Password")
         success, username, password = askLogin()
 
+        # REMOVE THIS TIJDELIJKE OM SNELLE TESTS TE DOEN
+        # success = True
+        # username = "super_admin"
+        # password = "Admin_123?"
+        # new_password = "Ab44567As_"
+
         if success is False:
             log_event("engineer", "Password update failed - current password validation", "", True)
             print("\nPassword update cancelled due to current password validation failure.")
@@ -70,8 +76,8 @@ def update_own_password():
             return "failed"
         
 
-        print("Username to change: " + username, "Old password: " + password, "New password: " + new_password)
-        exit()
+        # print("Username to change: " + username, "Old password: " + password, "New password: " + new_password)
+        # exit()
         
         # TODO: Implement actual password update in database
         # This would typically involve:
@@ -81,10 +87,10 @@ def update_own_password():
         # 4. Log successful password change
 
         # Stap 4: Update wachtwoord in database
-        # success = update_user_password(username, current_password, new_password)
         
         # Haalt data uit db op basis van username
-        user_data = UserController.read_user(username)
+        user_data = UserController.read_user(username=username)
+
         # Hashed wachtwoord met de userdata
         hashed_pw = hash_password(
             password=new_password,
