@@ -9,6 +9,9 @@ from src.Controllers.authorization import UserRole, has_required_role
 from src.Controllers.logger import log_event
 from src.Views.menu_utils import clear_screen, print_header, ask_password, ask_serial_number, ask_general
 from src.Views.menu_selections import ask_menu_choice, execute_menu_selection, display_menu_and_execute, ask_yes_no
+from src.Controllers.user import UserController
+from src.Controllers.auth import get_logged_in_username
+from src.Views.menu_utils import askLogin, clear_screen
 
 # =============================================================================
 # ENGINEER FUNCTION PLACEHOLDERS
@@ -36,15 +39,15 @@ def update_own_password():
             return "cancelled"
         
         # Step 1: Verify current password
-        print("\nStep 1: Verify Current Password")
-        current_password = ask_password("CURRENT PASSWORD", max_attempts=3, show_requirements=False)
-        
-        if current_password is None:
+        print("\nStep 1: Verify Current Username and Password")
+        success, username, password = askLogin()
+
+        if success is False:
             log_event("engineer", "Password update failed - current password validation", "", True)
             print("\nPassword update cancelled due to current password validation failure.")
             input("Press Enter to continue...")
             return "failed"
-        
+
         # Step 2: Get new password
         print("\nStep 2: Enter New Password")
         new_password = ask_password("NEW PASSWORD", max_attempts=3, show_requirements=True)
@@ -65,6 +68,10 @@ def update_own_password():
             input("Press Enter to continue...")
             return "failed"
         
+
+        print("Username to change: " + username, "Old password: " + password, "New password: " + new_password)
+        exit()
+        
         # TODO: Implement actual password update in database
         # This would typically involve:
         # 1. Verify current password against database
@@ -73,10 +80,10 @@ def update_own_password():
         # 4. Log successful password change
 
         # Stap 4: Update wachtwoord in database
-        username = get_logged_in_username()
-        success = update_user_password(username, current_password, new_password)
+        # success = update_user_password(username, current_password, new_password)
+        success_password_update = UserController.update_user(username=username, password_hash=)
 
-        if success:
+        if success_password_update:
             log_event("engineer", "Password successfully updated", f"User: {username}", False)
             clear_screen()
             print_header("PASSWORD UPDATE SUCCESSFUL")

@@ -27,7 +27,7 @@ def main():
     # success, username, password = askLogin()
     # REMOVE THIS
     success = True
-    username = "super_user"
+    username = "super_admin"
     password = "Admin_123?"
 
     if success:

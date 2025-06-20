@@ -64,8 +64,18 @@ def authenticate_user(username, password):
 
     print(role)
     set_logged_user_role(role)
+    set_logged_in_username(username)
 
     return {
         "username": username,
         "role": role
     }
+
+_logged_in_username = None  # Globale variabele om ingelogde gebruiker bij te houden
+
+def set_logged_in_username(username):
+    global _logged_in_username
+    _logged_in_username = username
+
+def get_logged_in_username():
+    return _logged_in_username

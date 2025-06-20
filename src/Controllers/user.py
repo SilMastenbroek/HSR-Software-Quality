@@ -25,15 +25,14 @@ class UserController:
             ))
             conn.commit()
 
-    def read_user(self, user_id):
+    def read_user(self, username):
         with create_connection() as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+            cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
             row = cursor.fetchone()
             if row:
                 return {
-                    "id": row["id"],
                     "username": decrypt_field(row["username"]),
                     "password_hash": decrypt_field(row["password_hash"]),
                     "role": decrypt_field(row["role"]),
@@ -43,7 +42,7 @@ class UserController:
                 }
             return None
 
-    def update_user(self, user_id, **fields):
+    def update_user(username, **fields):
         allowed_fields = ["username", "password_hash", "role", "first_name", "last_name"]
         set_clauses = []
         values = []
@@ -56,19 +55,19 @@ class UserController:
         if not set_clauses:
             return False  # No valid fields
 
-        values.append(user_id)
+        values.append(username)
 
         with create_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(f"""
-                UPDATE users SET {', '.join(set_clauses)} WHERE id = ?
+                UPDATE users SET {', '.join(set_clauses)} WHERE username = ?
             """, values)
             conn.commit()
             return cursor.rowcount > 0
 
-    def delete_user(self, user_id):
+    def delete_user(self, username):
         with create_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+            cursor.execute("DELETE FROM users WHERE username = ?", (username,))
             conn.commit()
             return cursor.rowcount > 0
